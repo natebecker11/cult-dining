@@ -1,0 +1,38 @@
+<div class="header1">Welcome To The Cult Dining Country Selector!</div>
+<div class="header2">{{HeaderDisplay}}</div>
+<div>
+    <div style="display: inline-block;">
+    
+        <div class="ui-wheel-of-fortune">
+            <ul class="wheel-of-fortune">
+                <li *ngFor="let ct of Countries; let i = index;" class="wheelWedge" [class.color1]="i % 5 == 0" [class.color2]="i % 5 == 1" [class.color3]="i % 5 == 2" [class.color4]="i % 5 == 3" [class.color5]="i % 5 == 4">
+                    <div style="padding-left:10px;">
+                        {{ct}}    
+                    </div>
+                </li>
+            </ul>
+            <button type="button" (click)="wheelOfFortune()" class="spinButton">SPIN</button>
+            <!-- <div class="indicator"></div> -->
+        </div>
+    
+    
+    
+    </div>
+    <div class="itemsList" style="display: inline-block;">
+        <ng-container *ngIf="CountriesThisSession?.length">
+            <div  class="selectedHeader">Your 2025 Countries:</div>
+            <div *ngFor="let ct of CountriesThisSession; let i = index;">
+                {{i+1}}. {{ct}}
+            </div>
+        </ng-container>
+        
+    </div>
+
+</div>
+
+    
+    
+
+
+
+    
