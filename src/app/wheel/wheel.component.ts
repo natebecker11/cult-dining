@@ -133,9 +133,23 @@ export class WheelComponent implements OnInit
 
     const index = Math.round(this.Countries.length * ratio)
 
+    let spinAudio = new Audio();
+    spinAudio.src = "assets/spinning-reel-27903.mp3"
+    spinAudio.load()
+    spinAudio.play()
+
     setTimeout(() =>
     {
       this._isSpinning = false;
+      spinAudio.pause()      
+
+      let fanfareAudio = new Audio();
+      fanfareAudio.src = "assets/fanfare.mp3"
+      fanfareAudio.load()
+      fanfareAudio.play()
+      setTimeout(() => {
+        fanfareAudio.pause()
+      }, 3000)
       let ctIndex = this.Countries.length - index;
       //HACK - if something goes wrong, set it to zero
       if (ctIndex < 0 || ctIndex > (this.Countries.length - 1))

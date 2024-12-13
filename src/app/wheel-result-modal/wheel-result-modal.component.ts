@@ -36,6 +36,8 @@ export class WheelResultModalComponent {
         this.CountryButtons = [this.Name, this.GuessingGameData.WrongGuess]
       }
     }
+
+    (<any>window).confetti()
   }
 
   // public Message: string = ""
