@@ -136,7 +136,15 @@ export class WheelComponent implements OnInit
     setTimeout(() =>
     {
       this._isSpinning = false;
-      const newCt = this.Countries[this.Countries.length - index]
+      let ctIndex = this.Countries.length - index;
+      //HACK - if something goes wrong, set it to zero
+      if (ctIndex < 0 || ctIndex > (this.Countries.length - 1))
+      {
+        ctIndex = 0;
+      }
+      const newCt = this.Countries[ctIndex]
+      
+      
       if (this.CountriesThisSession.includes(newCt))
       {
         this._duplicateCountry = newCt
