@@ -39,6 +39,7 @@
   {
     font-size: 24px;
     padding-bottom: 15px;
+    padding-top: 15px;
   }
   .header1
   {
@@ -111,7 +112,8 @@
         background: hsl(calc(360deg / var(--_items) * calc(var(--_idx))), 100%, 75%);
         clip-path: polygon(0% 0%, 100% 50%, 0% 100%);
         display: grid;
-        font-size: 2cqi;
+        font-size: 1.5cqi;
+        line-height: 10px!important;
         grid-area: 1 / -1;
         /* padding-left: 1ch; */
         rotate: calc(360deg / var(--_items) * calc(var(--_idx) - 1));

@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { FirebaseService } from '../firebase.service';
 import { Observable } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
+import { WheelResultModalComponent } from '../wheel-result-modal/wheel-result-modal.component';
 
 @Component({
   selector: 'app-wheel',
@@ -10,7 +12,8 @@ import { Observable } from 'rxjs';
 export class WheelComponent implements OnInit
 {
   constructor(
-    private _firebaseSvc: FirebaseService
+    private _firebaseSvc: FirebaseService,
+    private _dialog: MatDialog
   )
   {
 
@@ -20,12 +23,13 @@ export class WheelComponent implements OnInit
     this.Countries = await this._firebaseSvc.GetCountriesList();
     document.body.style.setProperty('--_items', this.Countries.length.toString());
 
-    setTimeout(() => {  
+    setTimeout(() =>
+    {
       const wedges = document.querySelectorAll(".wheelWedge");
       wedges.forEach((el, i) =>
       {
         const wedge = el as HTMLElement;
-        wedge.style.setProperty("--_idx", (i+1).toString())
+        wedge.style.setProperty("--_idx", (i + 1).toString())
       })
 
       // this.wheelOfFortune()
@@ -42,7 +46,7 @@ export class WheelComponent implements OnInit
 
   private _mostRecentCountry: string = "";
   private _isSpinning: boolean = false;
-  private _duplicateCountry: string= "";
+  private _duplicateCountry: string = "";
 
   public get HeaderDisplay(): string
   {
@@ -64,14 +68,16 @@ export class WheelComponent implements OnInit
     return `Your Next Country Is ${this._mostRecentCountry.toUpperCase()}!!!!!`
   }
 
-  public wheelOfFortune() {
-      
+  public wheelOfFortune()
+  {
+
     // const spin = document.querySelector('.spinButton') as HTMLButtonElement;
     const wheel = document.querySelector('ul') as HTMLUListElement;
     let animation: any;
     // let previousEndDegree = 0;
-  
-    if (animation) {
+
+    if (animation)
+    {
       animation.cancel(); // Reset the animation if it already exists
     }
 
@@ -97,7 +103,7 @@ export class WheelComponent implements OnInit
 
     this._previousEndDegree = newEndDegree;
 
-    const ratio = ( Math.abs((this._currentDegrees*-1 + 90)) % 360) / 360
+    const ratio = (Math.abs((this._currentDegrees * -1 + 90)) % 360) / 360
 
     // const position = this._currentDegrees % 360
 
@@ -115,17 +121,45 @@ export class WheelComponent implements OnInit
 
     const index = Math.round(this.Countries.length * ratio)
 
-    setTimeout(() => {
+    setTimeout(() =>
+    {
       this._isSpinning = false;
       const newCt = this.Countries[this.Countries.length - index]
       if (this.CountriesThisSession.includes(newCt))
       {
         this._duplicateCountry = newCt
+        const dialogRef = this._dialog.open(WheelResultModalComponent,
+          {
+            disableClose: true,
+            data:
+            {
+              Message: `Sorry, you already have ${this._duplicateCountry} in the list.`,
+              ButtonText: "Spin Again!"
+            }
+          }
+        )
+
+        dialogRef.afterClosed().subscribe({
+          next: () =>
+          {
+            this.wheelOfFortune();
+          }
+        })
       }
       else
       {
         this._mostRecentCountry = newCt
         this.CountriesThisSession.push(newCt)
+        this._dialog.open(WheelResultModalComponent,
+          {
+            disableClose: true,
+            data:
+            {
+              Message: `Your Next Country Is ${this._mostRecentCountry}!!!`,
+              ButtonText: "Super!"
+            }
+          }
+        )
       }
       console.log(newCt)
 
