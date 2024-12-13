@@ -125,30 +125,6 @@
     }
   }
 
-.color1{
-    background-color: #60B8BF;
-}
-
-.color2{
-    background-color: #E0B5BD;
-}
-
-.color3{
-    background-color: #C9B74A;
-}
-
-.color4
-{
-    background-color: #F49405;
-}
-
-.color5
-{
-    background-color: #F13D05;
-}
-
-
-
 
   .indicator
   {
@@ -159,3 +135,27 @@
     height:10px;
     width: 10px;
   }
+
+  
+
+.color1{
+  background-color: #60B8BF;
+}
+
+.color2{
+  background-color: #E0B5BD;
+}
+
+.color3{
+  background-color: #C9B74A;
+}
+
+.color4
+{
+  background-color: #F49405;
+}
+
+.color5
+{
+  background-color: #F13D05;
+}

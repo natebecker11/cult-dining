@@ -1,7 +1,44 @@
-<h2 mat-dialog-title>The Wheel Has Chosen!</h2>
+<h2 mat-dialog-title class="color1">The Wheel Has Chosen!</h2>
 <mat-dialog-content class="mat-typography">
- {{Message}}
+ <ng-container *ngIf="IsDupe">
+    You've already selected {{Name}} for this year. Spin Again!
+ </ng-container>
+ <ng-container *ngIf="!IsDupe">
+    <div class="p5 center">
+        Your Next Country Is
+    </div>
+    <div class="p30 pt5 pb10 f48 bold fw600 center color5-text">
+        {{Name}}!!!
+    </div>
+    <div class="p5 center">
+        Get Pumped!
+    </div>
+    <div class="p5 center" *ngIf="GuessingGameData">
+        Fun Fact: {{Name}} {{GuessingGameData.Fact}}
+    </div>  
+    <!-- <ng-container *ngIf="GuessingGameData">
+        <ng-container *ngIf="GuessedCountry">
+            <ng-container *ngIf="GuessedCountry == Name">
+                You're correct! The next country is {{Name}}, which {{GuessingGameData.Fact}}
+            </ng-container>
+            <ng-container *ngIf="GuessedCountry != Name">
+                So close! You guessed {{GuessedCountry}}, but actually, the next country is {{Name}}, which is {{GuessingGameData.Fact}}
+            </ng-container>
+        </ng-container>
+        <ng-container *ngIf="!GuessedCountry">
+            Guess The Country! Here's a hint: This country {{GuessingGameData.Fact}}
+        </ng-container>
+    </ng-container>
+    <ng-container *ngIf="!GuessingGameData">
+        Your Country Is {{Name}}!!! Get Pumped!
+    </ng-container> -->
+ </ng-container>
+
 </mat-dialog-content>
-<mat-dialog-actions align="end">
-  <button mat-button [mat-dialog-close]="true" cdkFocusInitial>{{ButtonText}}</button>
+<mat-dialog-actions align="end" class="color4">
+    <!-- <ng-container *ngIf="CountryButtons.length">
+        <button *ngFor="let ctBtn of CountryButtons" mat-button (click)="GuessCountry(ctBtn)" cdkFocusInitial>{{ctBtn}}</button>      
+    </ng-container> -->
+  <!-- <button *ngIf="ShowCloseButton" mat-button [mat-dialog-close]="true" cdkFocusInitial>{{CloseButtonText}}</button> -->
+  <button mat-button [mat-dialog-close]="true" cdkFocusInitial>{{CloseButtonText}}</button>
 </mat-dialog-actions>

@@ -23,6 +23,18 @@ export class WheelComponent implements OnInit
     this.Countries = await this._firebaseSvc.GetCountriesList();
     document.body.style.setProperty('--_items', this.Countries.length.toString());
 
+    const missingCts: string[] = []
+
+    this._firebaseSvc.RawAllCountries.forEach(ct => {
+      if (!this._firebaseSvc.CountriesWithFacts.find(ctFact => ctFact.Name == ct))
+      {
+        missingCts.push(ct)
+      }
+    })
+
+    console.log("missing", missingCts)
+    console.log(this._firebaseSvc.RawAllCountries.length, this._firebaseSvc.CountriesWithFacts.length)
+
     setTimeout(() =>
     {
       const wedges = document.querySelectorAll(".wheelWedge");
@@ -133,8 +145,8 @@ export class WheelComponent implements OnInit
             disableClose: true,
             data:
             {
-              Message: `Sorry, you already have ${this._duplicateCountry} in the list.`,
-              ButtonText: "Spin Again!"
+              Name: this._duplicateCountry,
+              IsDupe: true              
             }
           }
         )
@@ -150,13 +162,14 @@ export class WheelComponent implements OnInit
       {
         this._mostRecentCountry = newCt
         this.CountriesThisSession.push(newCt)
+        //const foundFactEntry = this._firebaseSvc.CountriesWithFacts.find(entry => entry.Name == this._mostRecentCountry);
         this._dialog.open(WheelResultModalComponent,
           {
             disableClose: true,
             data:
             {
-              Message: `Your Next Country Is ${this._mostRecentCountry}!!!`,
-              ButtonText: "Super!"
+              Name: this._mostRecentCountry,
+              IsDupe: false              
             }
           }
         )
