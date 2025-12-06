@@ -47,6 +47,29 @@ export class ManageCountriesComponent implements OnInit
     }
   }
 
+  public async commitCountries()
+  {
+    if (this.newlyUsedCountries.length === 0) return;
+
+    try
+    {
+      await this._firebase.AddUsedCountries(this.newlyUsedCountries);
+
+      // Refresh lists
+      const lists = await this._firebase.GetAdminCountryLists();
+      this.unusedCountries = lists.unused;
+      this.usedCountries = lists.used;
+
+      // Clear local state
+      this.newlyUsedCountries = [];
+      this.movedCountries.clear();
+
+    } catch (error)
+    {
+      console.error("Failed to commit countries", error);
+    }
+  }
+
   public goHome()
   {
     this._router.navigate(['/']);

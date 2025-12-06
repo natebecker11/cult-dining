@@ -5,7 +5,7 @@ import { Firestore, getFirestore, doc, getDoc } from "firebase/firestore";
 import { Auth, getAuth, GoogleAuthProvider, signInWithPopup, signOut, User, onAuthStateChanged } from "firebase/auth";
 import { BehaviorSubject } from 'rxjs';
 
-import { collection, addDoc, getDocs } from "firebase/firestore";
+import { collection, addDoc, getDocs, writeBatch } from "firebase/firestore";
 
 @Injectable({
   providedIn: 'root'
@@ -126,6 +126,27 @@ export class FirebaseService
     } catch (e)
     {
       console.error("Error adding document: ", e);
+    }
+  }
+
+  public async AddUsedCountries(countries: string[])
+  {
+    const batch = writeBatch(this._db);
+
+    countries.forEach(country =>
+    {
+      const docRef = doc(collection(this._db, this._usedCt));
+      batch.set(docRef, { Name: country });
+    });
+
+    try
+    {
+      await batch.commit();
+      console.log(`Successfully added ${countries.length} countries to UsedCountries via batch.`);
+    } catch (e)
+    {
+      console.error("Error adding used countries batch: ", e);
+      throw e;
     }
   }
   public RawUsedCountries = ["Afghanistan",
