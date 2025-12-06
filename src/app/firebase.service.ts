@@ -627,6 +627,17 @@ export class FirebaseService
     return this._availableCountries;
   }
 
+  public async GetUsedCountries(): Promise<string[]>
+  {
+    const usedCountriesSnapshot = await getDocs(collection(this._db, this._usedCt));
+    const usedCountries = new Array<string>();
+    usedCountriesSnapshot.forEach(doc =>
+    {
+      usedCountries.push(doc.data()["Name"]);
+    })
+    return usedCountries.sort();
+  }
+
   public async GetAdminCountryLists()
   {
     const allCountriesSnapshot = await getDocs(collection(this._db, this._allCt));
