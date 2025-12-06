@@ -21,6 +21,8 @@ export class GlobeComponent implements OnInit, AfterViewInit
   public historyGeoNames = new Set<string>();
   public usedGeoNames = new Set<string>();
   public labelData: any[] = [];
+  private unmappedCount: number = 0;
+  public nextYear: number = new Date().getFullYear() + 1;
 
   constructor(private _firebase: FirebaseService) { }
 
@@ -108,7 +110,8 @@ export class GlobeComponent implements OnInit, AfterViewInit
       .labelSize(2.0)
       .labelDotRadius(0.5)
       .labelColor(() => 'white')
-      .labelResolution(2);
+      .labelResolution(2)
+      .labelAltitude(0.2);
 
     // Fetch GeoJSON
     fetch('//unpkg.com/world-atlas/countries-50m.json').then(res => res.json()).then((countries: any) =>
@@ -147,14 +150,36 @@ export class GlobeComponent implements OnInit, AfterViewInit
     this.selectedCountry = null;
     this.globe.polygonCapColor(this.globe.polygonCapColor()); // Force update to clear highlight
 
-    // Pick random
-    const randomIndex = Math.floor(Math.random() * this.unusedCountries.length);
-    const targetName = this.unusedCountries[randomIndex];
+    let targetName: string;
+    let match: any;
+
+    // Pick until we find a valid one (mapped OR unmapped limit not reached)
+    do
+    {
+      const randomIndex = Math.floor(Math.random() * this.unusedCountries.length);
+      targetName = this.unusedCountries[randomIndex];
+
+      // Check if already in history (duplicate check)
+      if (this.history.includes(targetName))
+      {
+        console.log(`Skipping duplicate country: ${targetName}`);
+        continue;
+      }
+
+      match = this.findCountryFeature(targetName);
+
+      // If found, good.
+      // If not found, check limit.
+      if (!match && this.unmappedCount >= 2)
+      {
+        console.log(`Skipping unmapped country ${targetName} because limit of 2 reached.`);
+        continue;
+      }
+
+      break;
+    } while (true);
 
     console.log("Spinning to:", targetName);
-
-    // Find match
-    const match = this.findCountryFeature(targetName);
 
     // Initial Random Spin
     this.globe.controls().autoRotate = true;
@@ -183,6 +208,7 @@ export class GlobeComponent implements OnInit, AfterViewInit
       } else
       {
         console.warn("Could not find match for:", targetName);
+        this.unmappedCount++; // Increment count for unmapped
 
         const randomLat = (Math.random() * 180) - 90;
         const randomLng = (Math.random() * 360) - 180;
