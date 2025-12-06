@@ -39,13 +39,25 @@ export class GlobeComponent implements OnInit, AfterViewInit
     this.usedCountries = await this._firebase.GetUsedCountries();
     this.refreshUsedCountries();
 
-    // We need to populate usedGeoNames. 
-    // This requires the feature match logic which depends on countriesFeature being loaded.
-    // However, initGlobe fetches the geoJson. 
-    // We should probably wait or do it in the fetch callback. 
-    // But normalized matching is needed.
-    // Let's defer population to initGlobe fetch or right after.
-    // But findCountryFeature relies on countriesFeature.
+    // Initialize LLM Service with API Key from Firestore
+    try
+    {
+      const keys = await this._firebase.getApiKeys();
+      if (keys && keys.length > 0)
+      {
+        // Use the ID of the first document as the key
+        const apiKey = keys[0].id;
+        this._llmService.initialize(apiKey);
+        console.log("LLM Service successfully initialized.");
+      } else
+      {
+        console.error("No API keys found in Firestore 'ApiKeys' collection. LLM features will be disabled.");
+        // We could also show a user-friendly toast/alert here if desired
+      }
+    } catch (e)
+    {
+      console.error("Failed to fetch API keys during Globe initialization:", e);
+    }
   }
 
   public debugCountries(): void

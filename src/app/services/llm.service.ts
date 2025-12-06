@@ -1,23 +1,31 @@
 import { Injectable } from '@angular/core';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { environment } from '../../environments/environment';
 
 @Injectable({
     providedIn: 'root'
 })
 export class LlmService
 {
-    private genAI: GoogleGenerativeAI;
+    private genAI: GoogleGenerativeAI | undefined;
     private model: any;
 
-    constructor()
+    constructor() { }
+
+    initialize(apiKey: string)
     {
-        this.genAI = new GoogleGenerativeAI(environment.geminiApiKey);
+        this.genAI = new GoogleGenerativeAI(apiKey);
         this.model = this.genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+        console.log("LlmService initialized with fetched key.");
     }
 
     async generateCountrySummary(countries: string[], promptTemplate: string): Promise<string>
     {
+        if (!this.model)
+        {
+            console.error("LlmService not initialized with API Key.");
+            return "System Error: Oracle not authenticated.";
+        }
+
         try
         {
             const prompt = promptTemplate.replace('{{COUNTRIES}}', countries.join(', '));
@@ -33,17 +41,6 @@ export class LlmService
 
     async listModels(): Promise<void>
     {
-        const apiKey = environment.geminiApiKey;
-        const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
-
-        try
-        {
-            const response = await fetch(url);
-            const data = await response.json();
-            console.log("Available Gemini Models:", data);
-        } catch (error)
-        {
-            console.error("Error listing models:", error);
-        }
+        console.log("Model diagnostic requires API key setup.");
     }
 }

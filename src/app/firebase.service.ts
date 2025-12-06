@@ -129,6 +129,13 @@ export class FirebaseService
     }
   }
 
+  async getApiKeys(): Promise<any[]>
+  {
+    const colRef = collection(this._db, 'ApiKeys');
+    const snapshot = await getDocs(colRef);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  }
+
   public async AddUsedCountries(countries: string[])
   {
     const batch = writeBatch(this._db);
