@@ -1,0 +1,50 @@
+<div class="manage-countries-container">
+    <div class="teal-header-container">
+        <div class="header-title">Manage Countries</div>
+        <div class="header-controls">
+            <ng-container *ngIf="currentUser$ | async as user">
+                <span class="welcome-text">Welcome, {{ user.displayName }}!</span>
+                <button mat-raised-button color="primary" (click)="goHome()">Home</button>
+                <button mat-raised-button (click)="logout()">Logout</button>
+            </ng-container>
+        </div>
+    </div>
+
+    <div class="lists-container">
+        <div class="list-column">
+            <h2>Unused Countries</h2>
+            <div class="scrollable-list">
+                <div *ngFor="let country of unusedCountries" class="list-item"
+                    style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>{{ country }}</span>
+                    <button mat-icon-button color="primary" (click)="moveToNewlyUsed(country)"
+                        [disabled]="movedCountries.has(country)">
+                        <mat-icon>arrow_forward</mat-icon>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="list-column">
+            <h2>Newly Used Countries</h2>
+            <div class="scrollable-list">
+                <div *ngFor="let country of newlyUsedCountries" class="list-item"
+                    style="display: flex; justify-content: space-between; align-items: center;">
+                    <button mat-icon-button color="warn" (click)="removeFromNewlyUsed(country)">
+                        <mat-icon>arrow_back</mat-icon>
+                    </button>
+                    <span>{{ country }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="list-column">
+            <h2>Used Countries</h2>
+            <div class="scrollable-list">
+                <div *ngFor="let country of usedCountries" class="list-item">
+                    {{ country }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

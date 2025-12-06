@@ -7,14 +7,19 @@ import { WheelComponent } from './wheel/wheel.component';
 import { WheelResultModalComponent } from './wheel-result-modal/wheel-result-modal.component';
 import { MaterialModule } from './material/material.module';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { ManageCountriesComponent } from './manage-countries/manage-countries.component';
+import { AppRoutingModule } from './app-routing.module';
+
 @NgModule({
   declarations: [
     AppComponent,
     WheelComponent,
-    WheelResultModalComponent
+    WheelResultModalComponent,
+    ManageCountriesComponent
   ],
   imports: [
     BrowserModule,
+    AppRoutingModule,
     NgChartsModule,
     MaterialModule,
     BrowserAnimationsModule
