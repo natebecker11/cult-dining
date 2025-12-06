@@ -69,8 +69,8 @@ export class GlobeComponent implements OnInit, AfterViewInit
     const PALETTE = {
       BASE: '#EE589E',           // Rose Pink
       USED: '#BA1260',           // Berry/Dark Pink
-      PICKED: '#C6FF00',         // Lime A400
-      HISTORY: '#C6FF00',        // Lime A400
+      PICKED: '#2E86AB',         // Lime A400
+      HISTORY: '#2E86AB',        // Lime A400
       HOVER: '#18FFFF'           // Cyan A200
     };
 
@@ -90,7 +90,7 @@ export class GlobeComponent implements OnInit, AfterViewInit
       .polygonStrokeColor(() => '#111')
       .onPolygonHover((hoverD: any) =>
       {
-        this.globe.polygonAltitude((d: any) => d === hoverD ? 0.12 : 0.06);
+        this.globe.polygonAltitude((d: any) => d === hoverD ? 0.07 : 0.06);
       })
       .polygonsTransitionDuration(300)
       .onPolygonClick((obj: any) =>
@@ -98,22 +98,17 @@ export class GlobeComponent implements OnInit, AfterViewInit
         if (obj)
         {
           const { lat, lng } = this.getCentroid(obj.geometry);
-          this.labelData = [{
-            lat: lat,
-            lng: lng,
-            text: obj.properties.NAME
-          }];
-          this.globe.labelsData(this.labelData);
+          this.globe.pointOfView({ lat, lng, altitude: 1.6 }, 1000);
         }
       })
       .labelLat((d: any) => d.lat)
       .labelLng((d: any) => d.lng)
       .labelText((d: any) => d.text)
-      .labelSize(2.0)
-      .labelDotRadius(0.5)
-      .labelColor(() => 'white')
+      .labelSize(1.2)
+      .labelDotRadius(0.3)
+      .labelColor((d: any) => d.color)
       .labelResolution(2)
-      .labelAltitude(0.2);
+      .labelAltitude(0.08);
 
     // Fetch GeoJSON
     fetch('//unpkg.com/world-atlas/countries-50m.json').then(res => res.json()).then((countries: any) =>
@@ -142,6 +137,7 @@ export class GlobeComponent implements OnInit, AfterViewInit
     if (this.globe)
     {
       this.globe.polygonCapColor(this.globe.polygonCapColor());
+      this.updateLabels();
     }
   }
 
@@ -158,13 +154,39 @@ export class GlobeComponent implements OnInit, AfterViewInit
     // Pick until we find a valid one (mapped OR unmapped limit not reached)
     do
     {
-      const randomIndex = Math.floor(Math.random() * this.unusedCountries.length);
-      targetName = this.unusedCountries[randomIndex];
+      if (this.history.length === 11)
+      {
+        // Force Philippines on 12th spin
+        targetName = "Philippines";
+      } else
+      {
+        const randomIndex = Math.floor(Math.random() * this.unusedCountries.length);
+        targetName = this.unusedCountries[randomIndex];
+      }
+
+      // Special rule: Skip Philippines if not the 12th spin
+      if (targetName === "Philippines" && this.history.length !== 11)
+      {
+        console.log("Skipping Philippines until the 12th spin.");
+        continue;
+      }
 
       // Check if already in history (duplicate check)
       if (this.history.includes(targetName))
       {
         console.log(`Skipping duplicate country: ${targetName}`);
+        // If we forced Philippines and it's already there (unlikely if logic holds, but safe), we have an issue.
+        // But for normal flow, continue.
+        // If we forced it, we should probably break or handle it, but assuming 12th unique spin is wanted.
+        if (this.history.length === 11)
+        {
+          // If Philippines is already there, we can't force it again logically without dup. 
+          // But assuming user wants it as the 12th item.
+          // If it's already done, strictly speaking we rely on it being unique.
+          // Let's just break to allow it or maybe it's a re-spin. 
+          // Given the prompt "12th country", we assume it hasn't been picked yet because we skipped it.
+          break;
+        }
         continue;
       }
 
@@ -213,6 +235,7 @@ export class GlobeComponent implements OnInit, AfterViewInit
           this.history.push(targetName);
           this.historyGeoNames.add(match.properties.NAME);
           this.globe.polygonCapColor(this.globe.polygonCapColor());
+          this.updateLabels();
 
           // Stop drumroll and play fanfare
           this.drumrollAudio.pause();
@@ -269,9 +292,47 @@ export class GlobeComponent implements OnInit, AfterViewInit
       this.globe.pointOfView({ lat, lng, altitude: 1.6 }, 1000);
       this.selectedCountry = match.properties.NAME;
       this.globe.polygonCapColor(this.globe.polygonCapColor()); // Update colors
+      // updateLabels is handled automatically if historyGeoNames was updated, but here we just highlighted existing history.
     } else
     {
       console.warn("Could not find match for history item:", countryName);
+    }
+  }
+
+  private updateLabels(): void
+  {
+    // Collect all unique names from usedGeoNames and historyGeoNames
+    const labelNames = new Set<string>([...this.usedGeoNames, ...this.historyGeoNames]);
+
+    const newLabelData: any[] = [];
+
+    labelNames.forEach(name =>
+    {
+      // We need to find the feature to get lat/lng
+      // We can use helper or just search countriesFeature.
+      const match = this.countriesFeature.find((f: any) => f.properties.NAME === name);
+      if (match)
+      {
+        const { lat, lng } = this.getCentroid(match.geometry);
+        let color = 'white';
+        if (this.historyGeoNames.has(name))
+        {
+          color = 'white';
+        }
+
+        newLabelData.push({
+          lat: lat,
+          lng: lng,
+          text: name,
+          color: color
+        });
+      }
+    });
+
+    this.labelData = newLabelData;
+    if (this.globe)
+    {
+      this.globe.labelsData(this.labelData);
     }
   }
 
