@@ -1,9 +1,11 @@
 import { Injectable } from '@angular/core';
 // Import the functions you need from the SDKs you need
 import { FirebaseApp, initializeApp } from "firebase/app";
-import { Firestore, getFirestore } from "firebase/firestore";
+import { Firestore, getFirestore, doc, getDoc } from "firebase/firestore";
+import { Auth, getAuth, GoogleAuthProvider, signInWithPopup, signOut, User, onAuthStateChanged } from "firebase/auth";
+import { BehaviorSubject } from 'rxjs';
 
-import { collection, addDoc, getDocs } from "firebase/firestore";
+import { collection, addDoc, getDocs, writeBatch } from "firebase/firestore";
 
 @Injectable({
   providedIn: 'root'
@@ -27,10 +29,62 @@ export class FirebaseService
     // Initialize Firebase
     this._app = initializeApp(firebaseConfig);
     this._db = getFirestore(this._app);
+    this._auth = getAuth(this._app);
+
+    onAuthStateChanged(this._auth, async (user) =>
+    {
+      this.currentUserSubject.next(user);
+      if (user && user.email)
+      {
+        try
+        {
+          const adminDocRef = doc(this._db, "Admins", user.email);
+          const adminDoc = await getDoc(adminDocRef);
+          this.isAdminSubject.next(adminDoc.exists());
+        } catch (e)
+        {
+          console.error("Error checking admin status", e);
+          this.isAdminSubject.next(false);
+        }
+      } else
+      {
+        this.isAdminSubject.next(false);
+      }
+    });
   }
 
   private _app: FirebaseApp;
-  private _db: Firestore
+  private _db: Firestore;
+  private _auth: Auth;
+
+  private currentUserSubject = new BehaviorSubject<User | null>(null);
+  public currentUser$ = this.currentUserSubject.asObservable();
+
+  private isAdminSubject = new BehaviorSubject<boolean>(false);
+  public isAdmin$ = this.isAdminSubject.asObservable();
+
+  public async loginWithGoogle()
+  {
+    const provider = new GoogleAuthProvider();
+    try
+    {
+      await signInWithPopup(this._auth, provider);
+    } catch (error)
+    {
+      console.error("Login failed", error);
+    }
+  }
+
+  public async logout()
+  {
+    try
+    {
+      await signOut(this._auth);
+    } catch (error)
+    {
+      console.error("Logout failed", error);
+    }
+  }
 
   // private async _getUsedCountries()
   // {
@@ -46,7 +100,8 @@ export class FirebaseService
 
   public async Upload()
   {
-    try {
+    try
+    {
 
 
       // for (let i = 0; i < this.RawAllCountries.length; i++) {
@@ -55,21 +110,43 @@ export class FirebaseService
       //     Name: ctName
       //   });
       //   console.log("Added To All Countries " + ctName, docRef.id)
-        
+
       // }
 
-      
+
       // for (let i = 0; i < this.RawUsedCountries.length; i++) {
       //   const ctName = this.RawUsedCountries[i];
       //   const docRef = await addDoc(collection(this._db, this._usedCt), {
       //     Name: ctName
       //   });
       //   console.log("Added To Used Countries " + ctName, docRef.id)
-        
+
       // }
 
-    } catch (e) {
+    } catch (e)
+    {
       console.error("Error adding document: ", e);
+    }
+  }
+
+  public async AddUsedCountries(countries: string[])
+  {
+    const batch = writeBatch(this._db);
+
+    countries.forEach(country =>
+    {
+      const docRef = doc(collection(this._db, this._usedCt));
+      batch.set(docRef, { Name: country });
+    });
+
+    try
+    {
+      await batch.commit();
+      console.log(`Successfully added ${countries.length} countries to UsedCountries via batch.`);
+    } catch (e)
+    {
+      console.error("Error adding used countries batch: ", e);
+      throw e;
     }
   }
   public RawUsedCountries = ["Afghanistan",
@@ -121,295 +198,295 @@ export class FirebaseService
     "Zambia",
     "Zimbabwe"]
 
-    public RawAllCountries =  ["India",
-      "China",
-      "United States",
-      "Indonesia",
-      "Pakistan",
-      "Nigeria",
-      "Brazil",
-      "Bangladesh",
-      "Russia",
-      "Mexico",
-      "Ethiopia",
-      "Japan",
-      "Philippines",
-      "Egypt",
-      "DR Congo",
-      "Vietnam",
-      "Iran",
-      "Turkey",
-      "Germany",
-      "Thailand",
-      "United Kingdom",
-      "Tanzania",
-      "France",
-      "South Africa",
-      "Italy",
-      "Kenya",
-      "Myanmar",
-      "Colombia",
-      "South Korea",
-      "Sudan",
-      "Uganda",
-      "Spain",
-      "Algeria",
-      "Argentina",
-      "Iraq",
-      "Afghanistan",
-      "Yemen",
-      "Canada",
-      "Poland",
-      "Ukraine",
-      "Morocco",
-      "Angola",
-      "Uzbekistan",
-      "Malaysia",
-      "Peru",
-      "Ghana",
-      "Mozambique",
-      "Saudi Arabia",
-      "Madagascar",
-      "Ivory Coast",
-       "Nepal",
-      "Cameroon",
-      "Venezuela",
-      "Australia",
-      "North Korea",
-      "Niger",
-      "Mali",
-      "Syria",
-      "Taiwan",
-      "Burkina Faso",
-      "Sri Lanka",
-      "Malawi",
-      "Zambia",
-      "Kazakhstan",
-      "Chile",
-      "Chad",
-      "Romania",
-      "Somalia",
-      "Guatemala",
-      "Senegal",
-      "Netherlands",
-      "Ecuador",
-      "Cambodia",
-      "Zimbabwe",
-      "Guinea",
-      "Benin",
-      "Rwanda",
-      "Burundi",
-      "Bolivia",
-      "Tunisia",
-      "Belgium",
-      "Haiti",
-      "South Sudan",
-      "Jordan",
-      "Dominican Republic",
-      "Cuba",
-      "Czechia",
-      "Honduras",
-      "United Arab Emirates",
-      "Sweden",
-      "Portugal",
-      "Tajikistan",
-      "Papua New Guinea",
-      "Azerbaijan",
-      "Greece",
-      "Hungary",
-      "Togo",
-      "Israel",
-      "Austria",
-      "Belarus",
-       "Switzerland",
-      "Sierra Leone",
-      "Laos",
-      "Hong Kong (China)",
-      "Turkmenistan",
-      "Libya",
-      "Kyrgyzstan",
-      "Paraguay",
-      "Nicaragua",
-      "Bulgaria",
-      "Serbia",
-      "El Salvador",
-      "Congo",
-      "Denmark",
-      "Singapore",
-      "Lebanon",
-      "Finland",
-      "Norway",
-      "Slovakia",
-      "Liberia",
-      "Palestine",
-      "Ireland",
-      "New Zealand",
-      "Central African Republic",
-      "Costa Rica",
-      "Oman",
-      "Mauritania",
-      "Kuwait",
-      "Panama",
-      "Croatia",
-      "Georgia",
-      "Eritrea",
-      "Mongolia",
-      "Uruguay",
-      "Puerto Rico (United States)",
-      "Bosnia and Herzegovina",
-      "Moldova",
-      "Qatar",
-      "Namibia",
-      "Armenia",
-      "Lithuania",
-      "Jamaica",
-      "Albania",
-      "Gambia",
-      "Gabon",
-      "Botswana",
-      "Lesotho",
-      "Guinea-Bissau",
-      "Slovenia",
-      "Latvia",
-      "Equatorial Guinea",
-      "North Macedonia",
-      "Kosovo",
-      "Bahrain",
-      "Trinidad and Tobago",
-      "East Timor",
-      "Estonia",
-      "Cyprus",
-      "Mauritius",
-      "Eswatini",
-      "Djibouti",
-      "Fiji",
-      "Réunion (France)",
-      "Comoros",
-      "Guyana",
-      "Solomon Islands",
-      "Bhutan",
-      "Macao (China)",
-      "Luxembourg",
-      "Montenegro",
-      "Suriname",
-      "Western Sahara (disputed)",
-      "Malta",
-      "Maldives",
-      "Cape Verde",
-      "Brunei",
-      "Belize",
-      "Bahamas",
-      "Iceland",
-      "Guadeloupe (France)",
-      "Martinique (France)",
-      "Vanuatu",
-      "Mayotte (France)",
-      "French Guiana (France)",
-      "New Caledonia (France)",
-      "Barbados",
-      "French Polynesia (France)",
-      "São Tomé and Príncipe",
-      "Samoa",
-      "Curaçao (Netherlands)",
-      "Saint Lucia",
-      "Guam (United States)",
-      "Kiribati",
-      "Seychelles",
-      "Grenada",
-      "Micronesia",
-      "Tonga",
-      "Aruba (Netherlands)",
-      "Jersey (United Kingdom)",
-      "Saint Vincent and the Grenadines"]
+  public RawAllCountries = ["India",
+    "China",
+    "United States",
+    "Indonesia",
+    "Pakistan",
+    "Nigeria",
+    "Brazil",
+    "Bangladesh",
+    "Russia",
+    "Mexico",
+    "Ethiopia",
+    "Japan",
+    "Philippines",
+    "Egypt",
+    "DR Congo",
+    "Vietnam",
+    "Iran",
+    "Turkey",
+    "Germany",
+    "Thailand",
+    "United Kingdom",
+    "Tanzania",
+    "France",
+    "South Africa",
+    "Italy",
+    "Kenya",
+    "Myanmar",
+    "Colombia",
+    "South Korea",
+    "Sudan",
+    "Uganda",
+    "Spain",
+    "Algeria",
+    "Argentina",
+    "Iraq",
+    "Afghanistan",
+    "Yemen",
+    "Canada",
+    "Poland",
+    "Ukraine",
+    "Morocco",
+    "Angola",
+    "Uzbekistan",
+    "Malaysia",
+    "Peru",
+    "Ghana",
+    "Mozambique",
+    "Saudi Arabia",
+    "Madagascar",
+    "Ivory Coast",
+    "Nepal",
+    "Cameroon",
+    "Venezuela",
+    "Australia",
+    "North Korea",
+    "Niger",
+    "Mali",
+    "Syria",
+    "Taiwan",
+    "Burkina Faso",
+    "Sri Lanka",
+    "Malawi",
+    "Zambia",
+    "Kazakhstan",
+    "Chile",
+    "Chad",
+    "Romania",
+    "Somalia",
+    "Guatemala",
+    "Senegal",
+    "Netherlands",
+    "Ecuador",
+    "Cambodia",
+    "Zimbabwe",
+    "Guinea",
+    "Benin",
+    "Rwanda",
+    "Burundi",
+    "Bolivia",
+    "Tunisia",
+    "Belgium",
+    "Haiti",
+    "South Sudan",
+    "Jordan",
+    "Dominican Republic",
+    "Cuba",
+    "Czechia",
+    "Honduras",
+    "United Arab Emirates",
+    "Sweden",
+    "Portugal",
+    "Tajikistan",
+    "Papua New Guinea",
+    "Azerbaijan",
+    "Greece",
+    "Hungary",
+    "Togo",
+    "Israel",
+    "Austria",
+    "Belarus",
+    "Switzerland",
+    "Sierra Leone",
+    "Laos",
+    "Hong Kong (China)",
+    "Turkmenistan",
+    "Libya",
+    "Kyrgyzstan",
+    "Paraguay",
+    "Nicaragua",
+    "Bulgaria",
+    "Serbia",
+    "El Salvador",
+    "Congo",
+    "Denmark",
+    "Singapore",
+    "Lebanon",
+    "Finland",
+    "Norway",
+    "Slovakia",
+    "Liberia",
+    "Palestine",
+    "Ireland",
+    "New Zealand",
+    "Central African Republic",
+    "Costa Rica",
+    "Oman",
+    "Mauritania",
+    "Kuwait",
+    "Panama",
+    "Croatia",
+    "Georgia",
+    "Eritrea",
+    "Mongolia",
+    "Uruguay",
+    "Puerto Rico (United States)",
+    "Bosnia and Herzegovina",
+    "Moldova",
+    "Qatar",
+    "Namibia",
+    "Armenia",
+    "Lithuania",
+    "Jamaica",
+    "Albania",
+    "Gambia",
+    "Gabon",
+    "Botswana",
+    "Lesotho",
+    "Guinea-Bissau",
+    "Slovenia",
+    "Latvia",
+    "Equatorial Guinea",
+    "North Macedonia",
+    "Kosovo",
+    "Bahrain",
+    "Trinidad and Tobago",
+    "East Timor",
+    "Estonia",
+    "Cyprus",
+    "Mauritius",
+    "Eswatini",
+    "Djibouti",
+    "Fiji",
+    "Réunion (France)",
+    "Comoros",
+    "Guyana",
+    "Solomon Islands",
+    "Bhutan",
+    "Macao (China)",
+    "Luxembourg",
+    "Montenegro",
+    "Suriname",
+    "Western Sahara (disputed)",
+    "Malta",
+    "Maldives",
+    "Cape Verde",
+    "Brunei",
+    "Belize",
+    "Bahamas",
+    "Iceland",
+    "Guadeloupe (France)",
+    "Martinique (France)",
+    "Vanuatu",
+    "Mayotte (France)",
+    "French Guiana (France)",
+    "New Caledonia (France)",
+    "Barbados",
+    "French Polynesia (France)",
+    "São Tomé and Príncipe",
+    "Samoa",
+    "Curaçao (Netherlands)",
+    "Saint Lucia",
+    "Guam (United States)",
+    "Kiribati",
+    "Seychelles",
+    "Grenada",
+    "Micronesia",
+    "Tonga",
+    "Aruba (Netherlands)",
+    "Jersey (United Kingdom)",
+    "Saint Vincent and the Grenadines"]
 
-      public CountriesWithFacts = [
-        { Name: "India", Fact: "is home to the world's largest democracy." },
-        { Name: "China", Fact: "has the world's largest population." },
-        { Name: "United States", Fact: "is the third-largest by land area." },
-        { Name: "Indonesia", Fact: "is made up of over 17,000 islands." },
-        { Name: "Pakistan", Fact: "is home to the world's second-highest peak, K2." },
-        { Name: "Nigeria", Fact: "is Africa's most populous nation." },
-        { Name: "Brazil", Fact: "is home to the Amazon Rainforest." },
-        { Name: "Bangladesh", Fact: "has the world's largest river delta." },
-        { Name: "Russia", Fact: "is the largest in the world by land area." },
-        { Name: "Mexico", Fact: "is known for its ancient Mayan and Aztec ruins." },
-        { Name: "Ethiopia", Fact: "is the only African nation never colonized." },
-        { Name: "Japan", Fact: "has more than 6,800 islands." },
-        { Name: "Philippines", Fact: "is the world's largest producer of coconuts." },
-        { Name: "Egypt", Fact: "is home to the Great Pyramid of Giza, one of the Seven Wonders of the Ancient World." },
-        { Name: "DR Congo", Fact: "contains the world's deepest river, the Congo River." },
-        { Name: "Vietnam", Fact: "is the world's largest exporter of cashew nuts." },
-        { Name: "Iran", Fact: "is famous for its Persian carpets and rugs." },
-        { Name: "Turkey", Fact: "spans two continents: Europe and Asia." },
-        { Name: "Germany", Fact: "hosts the world's largest beer festival, Oktoberfest." },
-        { Name: "Thailand", Fact: "is the only Southeast Asian nation never colonized by a European power." },
-        { Name: "United Kingdom", Fact: "has the oldest continuously used parliament in the world." },
-        { Name: "Tanzania", Fact: "is home to Mount Kilimanjaro, Africa's highest peak." },
-        { Name: "France", Fact: "is the most visited in the world." },
-        { Name: "South Africa", Fact: "has three capital cities." },
-        { Name: "Italy", Fact: "is home to the smallest nation in the world, Vatican City." },
-        { Name: "Kenya", Fact: "is famous for its amazing wildlife safaris." },
-        { Name: "Myanmar", Fact: "has the world's largest book, inscribed on stone tablets at Kuthodaw Pagoda." },
-        { Name: "Colombia", Fact: "is the world's leading producer of emeralds." },
-        { Name: "South Korea", Fact: "is known as the 'Land of Morning Calm.'" },
-        { Name: "Sudan", Fact: "has more pyramids than Egypt." },
-        { Name: "Uganda", Fact: "is known for its mountain gorillas and beautiful lakes." },
-        { Name: "Spain", Fact: "is home to the famous La Tomatina festival." },
-        { Name: "Algeria", Fact: "is the largest in Africa by land area." },
-        { Name: "Argentina", Fact: "is the birthplace of tango." },
-        { Name: "Iraq", Fact: "is home to the ancient Mesopotamian civilization." },
-        { Name: "Afghanistan", Fact: "is known for its beautiful blue-tiled mosques." },
-        { Name: "Yemen", Fact: "is home to the ancient city of Sana'a, a UNESCO World Heritage Site." },
-        { Name: "Canada", Fact: "has the longest coastline in the world." },
-        { Name: "Poland", Fact: "is known for its delicious pierogi." },
-        { Name: "Ukraine", Fact: "is the largest in Europe by land area." },
-        { Name: "Morocco", Fact: "is famous for its vibrant markets and colorful mosaics." },
-        { Name: "Angola", Fact: "is rich in oil and diamonds." },
-        { Name: "Uzbekistan", Fact: "is known for its stunning Silk Road architecture." },
-        { Name: "Malaysia", Fact: "has the world's tallest twin towers, the Petronas Towers." },
-        { Name: "Peru", Fact: "is home to Machu Picchu, an ancient Incan city." },
-        { Name: "Ghana", Fact: "is known as the Gold Coast due to its gold resources." },
-        { Name: "Mozambique", Fact: "is famous for its stunning coastline and seafood." },
-        { Name: "Saudi Arabia", Fact: "is home to Mecca, the holiest city in Islam." },
-        { Name: "Madagascar", Fact: "is known for its unique biodiversity, including lemurs." },
-        { Name: "Ivory Coast", Fact: "is one of the world's largest producers of cocoa." },
-        { Name: "Nepal", Fact: "is home to Mount Everest, the world's highest peak." },
-        { Name: "Cameroon", Fact: "is known as 'Africa in Miniature' for its diverse geography." },
-        { Name: "Venezuela", Fact: "has the world's tallest waterfall, Angel Falls." },
-        { Name: "Australia", Fact: "is the only one that is also a continent." },
-        { Name: "North Korea", Fact: "is one of the most secretive in the world." },
-        { Name: "Niger", Fact: "is named after the Niger River." },
-        { Name: "Mali", Fact: "is home to the ancient city of Timbuktu." },
-        { Name: "Syria", Fact: "is one of the world's oldest continuously inhabited regions." },
-        { Name: "Taiwan", Fact: "is known for its night markets and bubble tea." },
-        { Name: "Burkina Faso", Fact: "has a vibrant tradition of storytelling and music." },
-        { Name: "Sri Lanka", Fact: "is known for its tea plantations." },
-        { Name: "Malawi", Fact: "is nicknamed 'The Warm Heart of Africa.'" },
-        { Name: "Zambia", Fact: "is home to Victoria Falls, one of the largest waterfalls in the world." },
-        { Name: "Kazakhstan", Fact: "is the largest landlocked country in the world." },
-        { Name: "Chile", Fact: "is home to the Atacama Desert, the driest place on Earth." },
-        { Name: "Chad", Fact: "is known as 'The Dead Heart of Africa' due to its location in the Sahara Desert." },
-        { Name: "Romania", Fact: "is home to the legendary Dracula's Castle in Transylvania." },
-        { Name: "Somalia", Fact: "has the longest coastline in mainland Africa." },
-        { Name: "Guatemala", Fact: "is known for its ancient Mayan ruins, including Tikal." },
-        { Name: "Senegal", Fact: "is known as the 'Gateway to Africa' for its strategic location." },
-        { Name: "Netherlands", Fact: "is famous for its tulips and windmills." },
-        { Name: "Ecuador", Fact: "is home to the Galápagos Islands." },
-        { Name: "Cambodia", Fact: "is home to Angkor Wat, the largest religious monument in the world." },
-        { Name: "Zimbabwe", Fact: "is home to the Great Zimbabwe ruins, an ancient city." },
-        { Name: "Guinea", Fact: "is a leading producer of bauxite, the main source of aluminum." },
-        { Name: "Benin", Fact: "is considered the birthplace of voodoo." },
-        { Name: "Rwanda", Fact: "is known as the 'Land of a Thousand Hills.'" },
-        { Name: "Burundi", Fact: "is one of the world's poorest, but rich in culture and traditions." },
-        { Name: "Bolivia", Fact: "has the world's largest salt flat, Salar de Uyuni." },
-        { Name: "Tunisia", Fact: "is home to ancient Carthage and Roman ruins like the Amphitheatre of El Djem." },
-        { Name: "Belgium", Fact: "is famous for its chocolates and waffles." },
-        { Name: "Haiti", Fact: "was the first independent nation in Latin America and the Caribbean." },
-        { Name: "South Sudan", Fact: "is the youngest in the world, gaining independence in 2011." },
-        { Name: "Jordan", Fact: "is home to Petra, one of the New Seven Wonders of the World." },
-        { Name: "Dominican Republic", Fact: "shares the island of Hispaniola with Haiti." },
-        { Name: "Cuba", Fact: "is known for its vintage cars and vibrant music scene." },
-        { Name: "Czechia", Fact: "is home to Prague, known as the 'City of a Hundred Spires.'" },
+  public CountriesWithFacts = [
+    { Name: "India", Fact: "is home to the world's largest democracy." },
+    { Name: "China", Fact: "has the world's largest population." },
+    { Name: "United States", Fact: "is the third-largest by land area." },
+    { Name: "Indonesia", Fact: "is made up of over 17,000 islands." },
+    { Name: "Pakistan", Fact: "is home to the world's second-highest peak, K2." },
+    { Name: "Nigeria", Fact: "is Africa's most populous nation." },
+    { Name: "Brazil", Fact: "is home to the Amazon Rainforest." },
+    { Name: "Bangladesh", Fact: "has the world's largest river delta." },
+    { Name: "Russia", Fact: "is the largest in the world by land area." },
+    { Name: "Mexico", Fact: "is known for its ancient Mayan and Aztec ruins." },
+    { Name: "Ethiopia", Fact: "is the only African nation never colonized." },
+    { Name: "Japan", Fact: "has more than 6,800 islands." },
+    { Name: "Philippines", Fact: "is the world's largest producer of coconuts." },
+    { Name: "Egypt", Fact: "is home to the Great Pyramid of Giza, one of the Seven Wonders of the Ancient World." },
+    { Name: "DR Congo", Fact: "contains the world's deepest river, the Congo River." },
+    { Name: "Vietnam", Fact: "is the world's largest exporter of cashew nuts." },
+    { Name: "Iran", Fact: "is famous for its Persian carpets and rugs." },
+    { Name: "Turkey", Fact: "spans two continents: Europe and Asia." },
+    { Name: "Germany", Fact: "hosts the world's largest beer festival, Oktoberfest." },
+    { Name: "Thailand", Fact: "is the only Southeast Asian nation never colonized by a European power." },
+    { Name: "United Kingdom", Fact: "has the oldest continuously used parliament in the world." },
+    { Name: "Tanzania", Fact: "is home to Mount Kilimanjaro, Africa's highest peak." },
+    { Name: "France", Fact: "is the most visited in the world." },
+    { Name: "South Africa", Fact: "has three capital cities." },
+    { Name: "Italy", Fact: "is home to the smallest nation in the world, Vatican City." },
+    { Name: "Kenya", Fact: "is famous for its amazing wildlife safaris." },
+    { Name: "Myanmar", Fact: "has the world's largest book, inscribed on stone tablets at Kuthodaw Pagoda." },
+    { Name: "Colombia", Fact: "is the world's leading producer of emeralds." },
+    { Name: "South Korea", Fact: "is known as the 'Land of Morning Calm.'" },
+    { Name: "Sudan", Fact: "has more pyramids than Egypt." },
+    { Name: "Uganda", Fact: "is known for its mountain gorillas and beautiful lakes." },
+    { Name: "Spain", Fact: "is home to the famous La Tomatina festival." },
+    { Name: "Algeria", Fact: "is the largest in Africa by land area." },
+    { Name: "Argentina", Fact: "is the birthplace of tango." },
+    { Name: "Iraq", Fact: "is home to the ancient Mesopotamian civilization." },
+    { Name: "Afghanistan", Fact: "is known for its beautiful blue-tiled mosques." },
+    { Name: "Yemen", Fact: "is home to the ancient city of Sana'a, a UNESCO World Heritage Site." },
+    { Name: "Canada", Fact: "has the longest coastline in the world." },
+    { Name: "Poland", Fact: "is known for its delicious pierogi." },
+    { Name: "Ukraine", Fact: "is the largest in Europe by land area." },
+    { Name: "Morocco", Fact: "is famous for its vibrant markets and colorful mosaics." },
+    { Name: "Angola", Fact: "is rich in oil and diamonds." },
+    { Name: "Uzbekistan", Fact: "is known for its stunning Silk Road architecture." },
+    { Name: "Malaysia", Fact: "has the world's tallest twin towers, the Petronas Towers." },
+    { Name: "Peru", Fact: "is home to Machu Picchu, an ancient Incan city." },
+    { Name: "Ghana", Fact: "is known as the Gold Coast due to its gold resources." },
+    { Name: "Mozambique", Fact: "is famous for its stunning coastline and seafood." },
+    { Name: "Saudi Arabia", Fact: "is home to Mecca, the holiest city in Islam." },
+    { Name: "Madagascar", Fact: "is known for its unique biodiversity, including lemurs." },
+    { Name: "Ivory Coast", Fact: "is one of the world's largest producers of cocoa." },
+    { Name: "Nepal", Fact: "is home to Mount Everest, the world's highest peak." },
+    { Name: "Cameroon", Fact: "is known as 'Africa in Miniature' for its diverse geography." },
+    { Name: "Venezuela", Fact: "has the world's tallest waterfall, Angel Falls." },
+    { Name: "Australia", Fact: "is the only one that is also a continent." },
+    { Name: "North Korea", Fact: "is one of the most secretive in the world." },
+    { Name: "Niger", Fact: "is named after the Niger River." },
+    { Name: "Mali", Fact: "is home to the ancient city of Timbuktu." },
+    { Name: "Syria", Fact: "is one of the world's oldest continuously inhabited regions." },
+    { Name: "Taiwan", Fact: "is known for its night markets and bubble tea." },
+    { Name: "Burkina Faso", Fact: "has a vibrant tradition of storytelling and music." },
+    { Name: "Sri Lanka", Fact: "is known for its tea plantations." },
+    { Name: "Malawi", Fact: "is nicknamed 'The Warm Heart of Africa.'" },
+    { Name: "Zambia", Fact: "is home to Victoria Falls, one of the largest waterfalls in the world." },
+    { Name: "Kazakhstan", Fact: "is the largest landlocked country in the world." },
+    { Name: "Chile", Fact: "is home to the Atacama Desert, the driest place on Earth." },
+    { Name: "Chad", Fact: "is known as 'The Dead Heart of Africa' due to its location in the Sahara Desert." },
+    { Name: "Romania", Fact: "is home to the legendary Dracula's Castle in Transylvania." },
+    { Name: "Somalia", Fact: "has the longest coastline in mainland Africa." },
+    { Name: "Guatemala", Fact: "is known for its ancient Mayan ruins, including Tikal." },
+    { Name: "Senegal", Fact: "is known as the 'Gateway to Africa' for its strategic location." },
+    { Name: "Netherlands", Fact: "is famous for its tulips and windmills." },
+    { Name: "Ecuador", Fact: "is home to the Galápagos Islands." },
+    { Name: "Cambodia", Fact: "is home to Angkor Wat, the largest religious monument in the world." },
+    { Name: "Zimbabwe", Fact: "is home to the Great Zimbabwe ruins, an ancient city." },
+    { Name: "Guinea", Fact: "is a leading producer of bauxite, the main source of aluminum." },
+    { Name: "Benin", Fact: "is considered the birthplace of voodoo." },
+    { Name: "Rwanda", Fact: "is known as the 'Land of a Thousand Hills.'" },
+    { Name: "Burundi", Fact: "is one of the world's poorest, but rich in culture and traditions." },
+    { Name: "Bolivia", Fact: "has the world's largest salt flat, Salar de Uyuni." },
+    { Name: "Tunisia", Fact: "is home to ancient Carthage and Roman ruins like the Amphitheatre of El Djem." },
+    { Name: "Belgium", Fact: "is famous for its chocolates and waffles." },
+    { Name: "Haiti", Fact: "was the first independent nation in Latin America and the Caribbean." },
+    { Name: "South Sudan", Fact: "is the youngest in the world, gaining independence in 2011." },
+    { Name: "Jordan", Fact: "is home to Petra, one of the New Seven Wonders of the World." },
+    { Name: "Dominican Republic", Fact: "shares the island of Hispaniola with Haiti." },
+    { Name: "Cuba", Fact: "is known for its vintage cars and vibrant music scene." },
+    { Name: "Czechia", Fact: "is home to Prague, known as the 'City of a Hundred Spires.'" },
     { Name: "Honduras", Fact: "is part of the Mesoamerican Barrier Reef, the second-largest coral reef in the world." },
     { Name: "United Arab Emirates", Fact: "is home to the Burj Khalifa, the tallest building in the world." },
     { Name: "Sweden", Fact: "is known for its innovation and was the birthplace of brands like IKEA and Volvo." },
@@ -523,7 +600,7 @@ export class FirebaseService
     { Name: "Aruba (Netherlands)", Fact: "is famous for its white sandy beaches and Dutch-Caribbean culture." },
     { Name: "Jersey (United Kingdom)", Fact: "is known for its historic castles and beautiful coastline." },
     { Name: "Saint Vincent and the Grenadines", Fact: "is known for its sailing culture and volcanic landscapes." }]
-     
+
 
   public GetConflicts(): string[]
   {
@@ -550,6 +627,28 @@ export class FirebaseService
     return this._availableCountries;
   }
 
+  public async GetAdminCountryLists()
+  {
+    const allCountriesSnapshot = await getDocs(collection(this._db, this._allCt));
+    const allCountries = new Array<string>();
+    allCountriesSnapshot.forEach(doc =>
+    {
+      allCountries.push(doc.data()["Name"]);
+    })
+
+    const usedCountriesSnapshot = await getDocs(collection(this._db, this._usedCt));
+    const usedCountries = new Array<string>();
+    usedCountriesSnapshot.forEach(doc =>
+    {
+      usedCountries.push(doc.data()["Name"]);
+    })
+
+    const unusedCountries = allCountries.filter(c => !usedCountries.includes(c)).sort();
+    const usedCountriesSorted = usedCountries.sort();
+
+    return { unused: unusedCountries, used: usedCountriesSorted };
+  }
+
   private _availableCountries = new Array<string>();
 
   public GetGuessingGame(countryName: string): GuessingGameData
@@ -570,11 +669,11 @@ export class FirebaseService
 }
 
 export type GuessingGameData =
-{
-  Name: string,
-  Message: string,
-  WrongGuess: string,
-  Fact: string
-}
+  {
+    Name: string,
+    Message: string,
+    WrongGuess: string,
+    Fact: string
+  }
 
 
