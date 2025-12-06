@@ -1,0 +1,15 @@
+<div style="position: relative; width: 100vw; height: 100vh; overflow: hidden;">
+    <div #globeViz style="width: 100%; height: 100%;"></div>
+
+    <div
+        style="position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%); z-index: 100; text-align: center;">
+        <button mat-raised-button color="primary" style="font-size: 20px; padding: 15px 30px;"
+            (click)="spinToRandomCountry()" [disabled]="isSpinning">
+            {{ isSpinning ? 'Traveling...' : 'Where to Next?' }}
+        </button>
+        <div *ngIf="selectedCountry && !isSpinning"
+            style="color: white; font-size: 32px; font-weight: bold; margin-top: 20px; text-shadow: 2px 2px 4px black;">
+            {{ selectedCountry }}
+        </div>
+    </div>
+</div>
