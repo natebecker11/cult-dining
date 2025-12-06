@@ -1,0 +1,5 @@
+.history-item:hover {
+    color: #ffd700;
+    /* Gold color on hover */
+    text-decoration: underline;
+}

@@ -1,0 +1,41 @@
+<div style="position: relative; width: 100vw; height: 100vh; overflow: hidden;">
+    <div #globeViz style="width: 100%; height: 100%;"></div>
+
+    <div
+        style="position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%); z-index: 100; text-align: center;">
+        <button mat-raised-button color="primary" style="font-size: 20px; padding: 15px 30px;"
+            (click)="spinToRandomCountry()" [disabled]="isSpinning">
+            {{ isSpinning ? 'Choosing...' : 'Choose Next Country!' }}
+        </button>
+        <div *ngIf="selectedCountry && !isSpinning"
+            style="color: white; font-size: 32px; font-weight: bold; margin-top: 20px; text-shadow: 2px 2px 4px black;">
+            {{ selectedCountry }}
+        </div>
+    </div>
+
+    <div style="position: absolute; top: 10px; left: 10px; z-index: 100;" *ngIf="isAdmin$ | async">
+        <button mat-raised-button color="warn" (click)="debugCountries()">Debug Countries</button>
+    </div>
+
+    <!-- History List Overlay -->
+    <div
+        style="position: absolute; top: 50%; right: 20px; transform: translateY(-50%); z-index: 100; background: rgba(0,0,0,0.7); color: white; padding: 20px; border-radius: 10px; max-height: 80vh; overflow-y: auto; width: 300px; display: flex; flex-direction: column;">
+        <h2 style="text-align: center; margin-bottom: 10px; font-family: 'Roboto', sans-serif;">{{ nextYear }}'s
+            Countries
+        </h2>
+        <div style="flex-grow: 1; overflow-y: auto; margin-bottom: 10px;">
+            <div *ngFor="let country of history; let i = index"
+                style="font-size: 16px; margin-bottom: 5px; cursor: pointer;" (click)="onHistoryItemClick(country)"
+                class="history-item">
+                {{ i + 1 }}. {{ country }}
+            </div>
+            <div *ngIf="history.length === 0" style="text-align: center; font-style: italic; color: #ccc;">
+                No countries selected yet.
+            </div>
+        </div>
+        <button mat-raised-button color="accent" (click)="copyHistoryToClipboard()" [disabled]="history.length === 0"
+            style="width: 100%;">
+            Copy to Clipboard
+        </button>
+    </div>
+</div>

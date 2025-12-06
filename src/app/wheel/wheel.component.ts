@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { FirebaseService } from '../firebase.service';
 import { Observable } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
+import { WheelResultModalComponent } from '../wheel-result-modal/wheel-result-modal.component';
 
 @Component({
   selector: 'app-wheel',
@@ -10,7 +12,8 @@ import { Observable } from 'rxjs';
 export class WheelComponent implements OnInit
 {
   constructor(
-    private _firebaseSvc: FirebaseService
+    private _firebaseSvc: FirebaseService,
+    private _dialog: MatDialog
   )
   {
 
@@ -20,12 +23,25 @@ export class WheelComponent implements OnInit
     this.Countries = await this._firebaseSvc.GetCountriesList();
     document.body.style.setProperty('--_items', this.Countries.length.toString());
 
-    setTimeout(() => {  
+    const missingCts: string[] = []
+
+    this._firebaseSvc.RawAllCountries.forEach(ct => {
+      if (!this._firebaseSvc.CountriesWithFacts.find(ctFact => ctFact.Name == ct))
+      {
+        missingCts.push(ct)
+      }
+    })
+
+    console.log("missing", missingCts)
+    console.log(this._firebaseSvc.RawAllCountries.length, this._firebaseSvc.CountriesWithFacts.length)
+
+    setTimeout(() =>
+    {
       const wedges = document.querySelectorAll(".wheelWedge");
       wedges.forEach((el, i) =>
       {
         const wedge = el as HTMLElement;
-        wedge.style.setProperty("--_idx", (i+1).toString())
+        wedge.style.setProperty("--_idx", (i + 1).toString())
       })
 
       // this.wheelOfFortune()
@@ -42,7 +58,7 @@ export class WheelComponent implements OnInit
 
   private _mostRecentCountry: string = "";
   private _isSpinning: boolean = false;
-  private _duplicateCountry: string= "";
+  private _duplicateCountry: string = "";
 
   public get HeaderDisplay(): string
   {
@@ -64,14 +80,16 @@ export class WheelComponent implements OnInit
     return `Your Next Country Is ${this._mostRecentCountry.toUpperCase()}!!!!!`
   }
 
-  public wheelOfFortune() {
-      
+  public wheelOfFortune()
+  {
+
     // const spin = document.querySelector('.spinButton') as HTMLButtonElement;
     const wheel = document.querySelector('ul') as HTMLUListElement;
     let animation: any;
     // let previousEndDegree = 0;
-  
-    if (animation) {
+
+    if (animation)
+    {
       animation.cancel(); // Reset the animation if it already exists
     }
 
@@ -97,7 +115,7 @@ export class WheelComponent implements OnInit
 
     this._previousEndDegree = newEndDegree;
 
-    const ratio = ( Math.abs((this._currentDegrees*-1 + 90)) % 360) / 360
+    const ratio = (Math.abs((this._currentDegrees * -1 + 90)) % 360) / 360
 
     // const position = this._currentDegrees % 360
 
@@ -115,17 +133,68 @@ export class WheelComponent implements OnInit
 
     const index = Math.round(this.Countries.length * ratio)
 
-    setTimeout(() => {
+    let spinAudio = new Audio();
+    spinAudio.src = "assets/spinning-reel-27903.mp3"
+    spinAudio.load()
+    spinAudio.play()
+
+    setTimeout(() =>
+    {
       this._isSpinning = false;
-      const newCt = this.Countries[this.Countries.length - index]
+      spinAudio.pause()      
+
+      let fanfareAudio = new Audio();
+      fanfareAudio.src = "assets/fanfare.mp3"
+      fanfareAudio.load()
+      fanfareAudio.play()
+      setTimeout(() => {
+        fanfareAudio.pause()
+      }, 3000)
+      let ctIndex = this.Countries.length - index;
+      //HACK - if something goes wrong, set it to zero
+      if (ctIndex < 0 || ctIndex > (this.Countries.length - 1))
+      {
+        ctIndex = 0;
+      }
+      const newCt = this.Countries[ctIndex]
+      
+      
       if (this.CountriesThisSession.includes(newCt))
       {
         this._duplicateCountry = newCt
+        const dialogRef = this._dialog.open(WheelResultModalComponent,
+          {
+            disableClose: true,
+            data:
+            {
+              Name: this._duplicateCountry,
+              IsDupe: true              
+            }
+          }
+        )
+
+        dialogRef.afterClosed().subscribe({
+          next: () =>
+          {
+            this.wheelOfFortune();
+          }
+        })
       }
       else
       {
         this._mostRecentCountry = newCt
         this.CountriesThisSession.push(newCt)
+        //const foundFactEntry = this._firebaseSvc.CountriesWithFacts.find(entry => entry.Name == this._mostRecentCountry);
+        this._dialog.open(WheelResultModalComponent,
+          {
+            disableClose: true,
+            data:
+            {
+              Name: this._mostRecentCountry,
+              IsDupe: false              
+            }
+          }
+        )
       }
       console.log(newCt)
 
