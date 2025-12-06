@@ -23,6 +23,8 @@ export class GlobeComponent implements OnInit, AfterViewInit
   public labelData: any[] = [];
   private unmappedCount: number = 0;
   public nextYear: number = new Date().getFullYear() + 1;
+  private drumrollAudio = new Audio('assets/drumroll.mp3');
+  private fanfareAudio = new Audio('assets/fanfare.mp3');
 
   constructor(private _firebase: FirebaseService) { }
 
@@ -185,6 +187,10 @@ export class GlobeComponent implements OnInit, AfterViewInit
     this.globe.controls().autoRotate = true;
     this.globe.controls().autoRotateSpeed = 50;
 
+    // Play drumroll
+    this.drumrollAudio.currentTime = 0;
+    this.drumrollAudio.play().catch(e => console.error("Error playing drumroll:", e));
+
     setTimeout(() =>
     {
       this.globe.controls().autoRotate = false;
@@ -203,6 +209,13 @@ export class GlobeComponent implements OnInit, AfterViewInit
           this.history.push(targetName);
           this.historyGeoNames.add(match.properties.NAME);
           this.globe.polygonCapColor(this.globe.polygonCapColor());
+
+          // Stop drumroll and play fanfare
+          this.drumrollAudio.pause();
+          this.drumrollAudio.currentTime = 0;
+          this.fanfareAudio.currentTime = 0;
+          this.fanfareAudio.play().catch(e => console.error("Error playing fanfare:", e));
+
         }, 2000);
 
       } else
@@ -220,6 +233,12 @@ export class GlobeComponent implements OnInit, AfterViewInit
           this.selectedCountry = `${targetName} (not mapped)`;
           this.isSpinning = false;
           this.history.push(targetName);
+
+          // Stop drumroll and play fanfare
+          this.drumrollAudio.pause();
+          this.drumrollAudio.currentTime = 0;
+          this.fanfareAudio.currentTime = 0;
+          this.fanfareAudio.play().catch(e => console.error("Error playing fanfare:", e));
         }, 2000);
       }
     }, 2000);
