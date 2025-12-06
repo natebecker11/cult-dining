@@ -1,6 +1,8 @@
 import { Component, ElementRef, OnInit, ViewChild, AfterViewInit } from '@angular/core';
 import Globe from 'globe.gl';
 import { FirebaseService } from '../firebase.service';
+import { LlmService } from '../services/llm.service';
+import { SUMMARY_PROMPT } from '../prompts/summary.prompt';
 
 @Component({
   selector: 'app-globe',
@@ -26,7 +28,10 @@ export class GlobeComponent implements OnInit, AfterViewInit
   private drumrollAudio = new Audio('assets/drumroll.mp3');
   private fanfareAudio = new Audio('assets/fanfare.mp3');
 
-  constructor(private _firebase: FirebaseService) { }
+  public summaryText: string = "";
+  public isGeneratingSummary: boolean = false;
+
+  constructor(private _firebase: FirebaseService, private _llmService: LlmService) { }
 
   async ngOnInit(): Promise<void>
   {
@@ -243,6 +248,11 @@ export class GlobeComponent implements OnInit, AfterViewInit
           this.fanfareAudio.currentTime = 0;
           this.fanfareAudio.play().catch(e => console.error("Error playing fanfare:", e));
 
+          if (this.history.length === 12)
+          {
+            this.generateSummary();
+          }
+
         }, 3000);
 
       } else
@@ -334,6 +344,51 @@ export class GlobeComponent implements OnInit, AfterViewInit
     {
       this.globe.labelsData(this.labelData);
     }
+  }
+
+  private async generateSummary()
+  {
+    this.isGeneratingSummary = true;
+    try
+    {
+      this.summaryText = await this._llmService.generateCountrySummary(this.history, SUMMARY_PROMPT);
+    } catch (e)
+    {
+      console.error("Failed to generate summary", e);
+      this.summaryText = "Could not generate summary.";
+    } finally
+    {
+      this.isGeneratingSummary = false;
+    }
+  }
+
+  public testSummary()
+  {
+    // Clear current history to simulate a fresh run
+    this.history = [];
+    this.historyGeoNames.clear();
+
+    // Get 12 random unused countries
+    const shuffled = [...this.unusedCountries].sort(() => 0.5 - Math.random());
+    const selected = shuffled.slice(0, 12);
+
+    selected.forEach(name =>
+    {
+      this.history.push(name);
+      this.historyGeoNames.add(name);
+    });
+
+    // Update globe
+    this.globe.polygonCapColor(this.globe.polygonCapColor());
+    this.updateLabels();
+
+    // Trigger summary
+    this.generateSummary();
+  }
+
+  public runModelDiagnostic()
+  {
+    this._llmService.listModels();
   }
 
   private findCountryFeature(name: string): any

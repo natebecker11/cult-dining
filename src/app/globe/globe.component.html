@@ -13,8 +13,30 @@
         </div>
     </div>
 
+    <!-- Summary Panel (Left Side) -->
+    <div *ngIf="history.length === 12"
+        style="position: absolute; top: 50%; left: 20px; transform: translateY(-50%); z-index: 100;
+               background: rgba(0,0,0,0.8); color: white; padding: 20px; border-radius: 10px;
+               max-height: 80vh; overflow-y: auto; width: 400px; display: flex; flex-direction: column; font-family: 'Roboto', sans-serif;">
+        <h2 style="text-align: center; color: #FFD700; margin-bottom: 20px;">Your {{nextYear}} Cultural Dinner
+            Breakdown!</h2>
+
+        <div *ngIf="isGeneratingSummary" style="text-align: center; padding: 20px;">
+            <p style="font-style: italic; font-size: 18px;">Consulting the Oracle...</p>
+            <!-- Could add a spinner here if material spinner is available, e.g. <mat-spinner></mat-spinner> -->
+        </div>
+
+        <div *ngIf="!isGeneratingSummary && summaryText" style="line-height: 1.6; font-size: 15px;">
+            <markdown [data]="summaryText"></markdown>
+        </div>
+    </div>
+
     <div style="position: absolute; top: 10px; left: 10px; z-index: 100;" *ngIf="isAdmin$ | async">
         <button mat-raised-button color="warn" (click)="debugCountries()">Debug Countries</button>
+        <button mat-raised-button color="accent" (click)="testSummary()" style="margin-left: 10px;">Test
+            Summary</button>
+        <button mat-raised-button color="primary" (click)="runModelDiagnostic()" style="margin-left: 10px;">Model
+            Diagnostic</button>
     </div>
 
     <!-- History List Overlay -->
