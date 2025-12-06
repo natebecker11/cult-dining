@@ -1,6 +1,8 @@
 import { Component, ElementRef, OnInit, ViewChild, AfterViewInit } from '@angular/core';
 import Globe from 'globe.gl';
 import { FirebaseService } from '../firebase.service';
+import { LlmService } from '../services/llm.service';
+import { SUMMARY_PROMPT } from '../prompts/summary.prompt';
 
 @Component({
   selector: 'app-globe',
@@ -26,7 +28,10 @@ export class GlobeComponent implements OnInit, AfterViewInit
   private drumrollAudio = new Audio('assets/drumroll.mp3');
   private fanfareAudio = new Audio('assets/fanfare.mp3');
 
-  constructor(private _firebase: FirebaseService) { }
+  public summaryText: string = "";
+  public isGeneratingSummary: boolean = false;
+
+  constructor(private _firebase: FirebaseService, private _llmService: LlmService) { }
 
   async ngOnInit(): Promise<void>
   {
@@ -34,13 +39,25 @@ export class GlobeComponent implements OnInit, AfterViewInit
     this.usedCountries = await this._firebase.GetUsedCountries();
     this.refreshUsedCountries();
 
-    // We need to populate usedGeoNames. 
-    // This requires the feature match logic which depends on countriesFeature being loaded.
-    // However, initGlobe fetches the geoJson. 
-    // We should probably wait or do it in the fetch callback. 
-    // But normalized matching is needed.
-    // Let's defer population to initGlobe fetch or right after.
-    // But findCountryFeature relies on countriesFeature.
+    // Initialize LLM Service with API Key from Firestore
+    try
+    {
+      const keys = await this._firebase.getApiKeys();
+      if (keys && keys.length > 0)
+      {
+        // Use the ID of the first document as the key
+        const apiKey = keys[0].id;
+        this._llmService.initialize(apiKey);
+        console.log("LLM Service successfully initialized.");
+      } else
+      {
+        console.error("No API keys found in Firestore 'ApiKeys' collection. LLM features will be disabled.");
+        // We could also show a user-friendly toast/alert here if desired
+      }
+    } catch (e)
+    {
+      console.error("Failed to fetch API keys during Globe initialization:", e);
+    }
   }
 
   public debugCountries(): void
@@ -243,6 +260,11 @@ export class GlobeComponent implements OnInit, AfterViewInit
           this.fanfareAudio.currentTime = 0;
           this.fanfareAudio.play().catch(e => console.error("Error playing fanfare:", e));
 
+          if (this.history.length === 12)
+          {
+            this.generateSummary();
+          }
+
         }, 3000);
 
       } else
@@ -334,6 +356,51 @@ export class GlobeComponent implements OnInit, AfterViewInit
     {
       this.globe.labelsData(this.labelData);
     }
+  }
+
+  private async generateSummary()
+  {
+    this.isGeneratingSummary = true;
+    try
+    {
+      this.summaryText = await this._llmService.generateCountrySummary(this.history, SUMMARY_PROMPT);
+    } catch (e)
+    {
+      console.error("Failed to generate summary", e);
+      this.summaryText = "Could not generate summary.";
+    } finally
+    {
+      this.isGeneratingSummary = false;
+    }
+  }
+
+  public testSummary()
+  {
+    // Clear current history to simulate a fresh run
+    this.history = [];
+    this.historyGeoNames.clear();
+
+    // Get 12 random unused countries
+    const shuffled = [...this.unusedCountries].sort(() => 0.5 - Math.random());
+    const selected = shuffled.slice(0, 12);
+
+    selected.forEach(name =>
+    {
+      this.history.push(name);
+      this.historyGeoNames.add(name);
+    });
+
+    // Update globe
+    this.globe.polygonCapColor(this.globe.polygonCapColor());
+    this.updateLabels();
+
+    // Trigger summary
+    this.generateSummary();
+  }
+
+  public runModelDiagnostic()
+  {
+    this._llmService.listModels();
   }
 
   private findCountryFeature(name: string): any
