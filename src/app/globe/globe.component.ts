@@ -191,6 +191,9 @@ export class GlobeComponent implements OnInit, AfterViewInit
     this.drumrollAudio.currentTime = 0;
     this.drumrollAudio.play().catch(e => console.error("Error playing drumroll:", e));
 
+    // Zoom out slightly for the spin
+    this.globe.pointOfView({ altitude: 2.5 }, 1000);
+
     setTimeout(() =>
     {
       this.globe.controls().autoRotate = false;
@@ -200,7 +203,8 @@ export class GlobeComponent implements OnInit, AfterViewInit
       {
         const { lat, lng } = this.getCentroid(match.geometry);
 
-        this.globe.pointOfView({ lat, lng, altitude: 2 }, 2000);
+        // Zoom in closer (1.6)
+        this.globe.pointOfView({ lat, lng, altitude: 1.6 }, 3000);
 
         setTimeout(() =>
         {
@@ -216,7 +220,7 @@ export class GlobeComponent implements OnInit, AfterViewInit
           this.fanfareAudio.currentTime = 0;
           this.fanfareAudio.play().catch(e => console.error("Error playing fanfare:", e));
 
-        }, 2000);
+        }, 3000);
 
       } else
       {
@@ -226,7 +230,8 @@ export class GlobeComponent implements OnInit, AfterViewInit
         const randomLat = (Math.random() * 180) - 90;
         const randomLng = (Math.random() * 360) - 180;
 
-        this.globe.pointOfView({ lat: randomLat, lng: randomLng, altitude: 2 }, 2000);
+        // Zoom in closer (1.6) for unmapped too? Maybe keep it at 2 or 1.6. Let's do 1.6 for consistency.
+        this.globe.pointOfView({ lat: randomLat, lng: randomLng, altitude: 1.6 }, 3000);
 
         setTimeout(() =>
         {
@@ -239,9 +244,9 @@ export class GlobeComponent implements OnInit, AfterViewInit
           this.drumrollAudio.currentTime = 0;
           this.fanfareAudio.currentTime = 0;
           this.fanfareAudio.play().catch(e => console.error("Error playing fanfare:", e));
-        }, 2000);
+        }, 3000);
       }
-    }, 2000);
+    }, 3000);
   }
 
   public copyHistoryToClipboard(): void
@@ -260,7 +265,8 @@ export class GlobeComponent implements OnInit, AfterViewInit
     {
       const { lat, lng } = this.getCentroid(match.geometry);
       // Determine altitude based on country area or just a default? Default 2 is fine as used in spin.
-      this.globe.pointOfView({ lat, lng, altitude: 2 }, 1000);
+      // Changing to 1.6 for zoom in effect
+      this.globe.pointOfView({ lat, lng, altitude: 1.6 }, 1000);
       this.selectedCountry = match.properties.NAME;
       this.globe.polygonCapColor(this.globe.polygonCapColor()); // Update colors
     } else
