@@ -121,8 +121,8 @@ export class GlobeComponent implements OnInit, AfterViewInit
       .labelLat((d: any) => d.lat)
       .labelLng((d: any) => d.lng)
       .labelText((d: any) => d.text)
-      .labelSize(1.2)
-      .labelDotRadius(0.3)
+      .labelSize(0.8)
+      .labelDotRadius(0.2)
       .labelColor((d: any) => d.color)
       .labelResolution(2)
       .labelAltitude(0.08);
@@ -243,7 +243,7 @@ export class GlobeComponent implements OnInit, AfterViewInit
         const { lat, lng } = this.getCentroid(match.geometry);
 
         // Zoom in closer (1.6)
-        this.globe.pointOfView({ lat, lng, altitude: 1.6 }, 3000);
+        this.globe.pointOfView({ lat, lng, altitude: 1.3 }, 3000);
 
         setTimeout(() =>
         {
