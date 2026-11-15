@@ -20,7 +20,7 @@
     </div>
     <div class="itemsList" style="display: inline-block;">
         <ng-container *ngIf="CountriesThisSession?.length">
-            <div  class="selectedHeader">Your 2025 Countries:</div>
+            <div  class="selectedHeader">Your {{nextYear}} Countries:</div>
             <div *ngFor="let ct of CountriesThisSession; let i = index;">
                 {{i+1}}. {{ct}}
             </div>
