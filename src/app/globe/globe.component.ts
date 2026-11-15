@@ -3,6 +3,7 @@ import Globe from 'globe.gl';
 import { FirebaseService } from '../firebase.service';
 import { LlmService } from '../services/llm.service';
 import { SUMMARY_PROMPT } from '../prompts/summary.prompt';
+import { sharesLandBorder } from '../data/land-borders';
 
 @Component({
   selector: 'app-globe',
@@ -167,6 +168,7 @@ export class GlobeComponent implements OnInit, AfterViewInit
 
     let targetName: string;
     let match: any;
+    let borderRepicks = 0;
 
     // Pick until we find a valid one (mapped OR unmapped limit not reached)
     do
@@ -188,6 +190,15 @@ export class GlobeComponent implements OnInit, AfterViewInit
       if (!match && this.unmappedCount >= 2)
       {
         console.log(`Skipping unmapped country ${targetName} because limit of 2 reached.`);
+        continue;
+      }
+
+      // Avoid neighbors: repick if it shares a land border with a country already picked this year.
+      // After 2 border repicks we stop checking for this spin, so it can never get stuck.
+      if (borderRepicks < 2 && sharesLandBorder(targetName, this.history))
+      {
+        borderRepicks++;
+        console.log(`Repicking ${targetName}: borders a country already picked (border repick ${borderRepicks} of 2).`);
         continue;
       }
 
