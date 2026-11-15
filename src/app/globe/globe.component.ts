@@ -171,39 +171,13 @@ export class GlobeComponent implements OnInit, AfterViewInit
     // Pick until we find a valid one (mapped OR unmapped limit not reached)
     do
     {
-      if (this.history.length === 11)
-      {
-        // Force Philippines on 12th spin
-        targetName = "Philippines";
-      } else
-      {
-        const randomIndex = Math.floor(Math.random() * this.unusedCountries.length);
-        targetName = this.unusedCountries[randomIndex];
-      }
-
-      // Special rule: Skip Philippines if not the 12th spin
-      if (targetName === "Philippines" && this.history.length !== 11)
-      {
-        console.log("Skipping Philippines until the 12th spin.");
-        continue;
-      }
+      const randomIndex = Math.floor(Math.random() * this.unusedCountries.length);
+      targetName = this.unusedCountries[randomIndex];
 
       // Check if already in history (duplicate check)
       if (this.history.includes(targetName))
       {
         console.log(`Skipping duplicate country: ${targetName}`);
-        // If we forced Philippines and it's already there (unlikely if logic holds, but safe), we have an issue.
-        // But for normal flow, continue.
-        // If we forced it, we should probably break or handle it, but assuming 12th unique spin is wanted.
-        if (this.history.length === 11)
-        {
-          // If Philippines is already there, we can't force it again logically without dup. 
-          // But assuming user wants it as the 12th item.
-          // If it's already done, strictly speaking we rely on it being unique.
-          // Let's just break to allow it or maybe it's a re-spin. 
-          // Given the prompt "12th country", we assume it hasn't been picked yet because we skipped it.
-          break;
-        }
         continue;
       }
 
