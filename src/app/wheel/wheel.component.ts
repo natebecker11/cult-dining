@@ -52,6 +52,7 @@ export class WheelComponent implements OnInit
   public Countries: string[] = [];
 
   public CountriesThisSession: string[] = []
+  public nextYear: number = new Date().getFullYear() + 1;
 
   private _previousEndDegree: number = 0
   private _currentDegrees: number = 0

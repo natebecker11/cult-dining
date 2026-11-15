@@ -342,7 +342,9 @@ export class GlobeComponent implements OnInit, AfterViewInit
     this.isGeneratingSummary = true;
     try
     {
-      this.summaryText = await this._llmService.generateCountrySummary(this.history, SUMMARY_PROMPT);
+      // Same year the Breakdown panel heading shows
+      const prompt = SUMMARY_PROMPT.replace('{{YEAR}}', String(this.nextYear));
+      this.summaryText = await this._llmService.generateCountrySummary(this.history, prompt);
     } catch (e)
     {
       console.error("Failed to generate summary", e);

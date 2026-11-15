@@ -1,6 +1,6 @@
 export const SUMMARY_PROMPT = `
 You are a cultural expert and data analyst.
-I have selected the following 12 countries for a "Cultural Dinner" series in 2026:
+I have selected the following 12 countries for a "Cultural Dinner" series in {{YEAR}}:
 {{COUNTRIES}}
 
 Please provide a summary breakdown of these countries using the following format:
