@@ -8,11 +8,11 @@
     <span style="font-weight: 500; margin-right: 10px;">Welcome, {{ user.displayName }}!</span>
     <button mat-raised-button color="warn" *ngIf="isAdmin$ | async" (click)="goToAdmin()">Manage Countries</button>
 
-    <ng-container *ngIf="isGlobePage$ | async; else globeBtn">
-      <button mat-raised-button color="primary" routerLink="/">Home</button>
+    <ng-container *ngIf="isWheelPage$ | async; else wheelBtn">
+      <button mat-raised-button color="accent" routerLink="/">Globe View</button>
     </ng-container>
-    <ng-template #globeBtn>
-      <button mat-raised-button color="accent" routerLink="/globe">Globe View</button>
+    <ng-template #wheelBtn>
+      <button mat-raised-button color="accent" routerLink="/wheel">Wheel View</button>
     </ng-template>
 
     <button mat-raised-button (click)="logout()">Logout</button>
@@ -20,11 +20,11 @@
   <ng-template #loginBtn>
     <button mat-raised-button color="primary" (click)="login()">Login with Google</button>
 
-    <ng-container *ngIf="isGlobePage$ | async; else globeBtnLogin">
-      <button mat-raised-button color="primary" routerLink="/">Home</button>
+    <ng-container *ngIf="isWheelPage$ | async; else wheelBtnLogin">
+      <button mat-raised-button color="accent" routerLink="/">Globe View</button>
     </ng-container>
-    <ng-template #globeBtnLogin>
-      <button mat-raised-button color="accent" routerLink="/globe">Globe View</button>
+    <ng-template #wheelBtnLogin>
+      <button mat-raised-button color="accent" routerLink="/wheel">Wheel View</button>
     </ng-template>
   </ng-template>
 </div>

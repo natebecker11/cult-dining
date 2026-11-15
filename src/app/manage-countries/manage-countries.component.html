@@ -13,8 +13,16 @@
     <div class="lists-container">
         <div class="list-column">
             <h2>Unused Countries</h2>
+            <input #filterInput type="text" class="country-filter" placeholder="Filter countries... (Enter adds the top match)"
+                autocomplete="off" [value]="unusedFilter"
+                (input)="onFilterInput(filterInput.value)"
+                (keydown.enter)="addTopMatch()"
+                (keydown.escape)="onFilterInput('')" />
             <div class="scrollable-list">
-                <div *ngFor="let country of unusedCountries" class="list-item"
+                <div *ngIf="unusedFilter.trim() && filteredUnusedCountries.length === 0" class="filter-empty">
+                    No unused country matches "{{ unusedFilter }}"
+                </div>
+                <div *ngFor="let country of filteredUnusedCountries" class="list-item"
                     style="display: flex; justify-content: space-between; align-items: center;">
                     <span>{{ country }}</span>
                     <button mat-icon-button color="primary" (click)="moveToNewlyUsed(country)"
