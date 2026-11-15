@@ -6,8 +6,9 @@ import { GlobeComponent } from './globe/globe.component';
 import { adminGuard } from './admin.guard';
 
 const routes: Routes = [
-    { path: '', component: WheelComponent },
-    { path: 'globe', component: GlobeComponent },
+    { path: '', component: GlobeComponent },
+    { path: 'wheel', component: WheelComponent },
+    { path: 'globe', redirectTo: '' }, // keep old /globe links working
     { path: 'admin', component: ManageCountriesComponent, canActivate: [adminGuard] },
     { path: '**', redirectTo: '' }
 ];

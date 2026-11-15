@@ -20,9 +20,9 @@ export class AppComponent implements OnInit
     startWith(true) // Default to showing header
   );
 
-  public isGlobePage$ = this._router.events.pipe(
+  public isWheelPage$ = this._router.events.pipe(
     filter((event: Event): event is NavigationEnd => event instanceof NavigationEnd),
-    map((event: NavigationEnd) => event.url === '/globe'),
+    map((event: NavigationEnd) => event.urlAfterRedirects.split(/[?#]/)[0] === '/wheel'),
     startWith(false)
   );
 

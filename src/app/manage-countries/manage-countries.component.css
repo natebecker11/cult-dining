@@ -67,6 +67,21 @@
   border-bottom: 1px solid #ddd;
 }
 
+.country-filter {
+  margin: 0 10px;
+  padding: 8px 10px;
+  font-size: 15px;
+  border: 1px solid #60B8BF;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.filter-empty {
+  padding: 8px 12px;
+  font-style: italic;
+  color: #666;
+}
+
 .scrollable-list {
   flex: 1;
   overflow-y: auto;
