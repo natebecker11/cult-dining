@@ -263,6 +263,11 @@ export class GlobeComponent implements OnInit, AfterViewInit
           this.drumrollAudio.currentTime = 0;
           this.fanfareAudio.currentTime = 0;
           this.fanfareAudio.play().catch(e => console.error("Error playing fanfare:", e));
+
+          if (this.history.length === 12)
+          {
+            this.generateSummary();
+          }
         }, 3000);
       }
     }, 3000);
