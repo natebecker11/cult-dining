@@ -1,0 +1,21 @@
+<div class="viewer" (touchstart)="onTouchStart($event)" (touchend)="onTouchEnd($event)" (click)="close()">
+    <div class="viewer-top" (click)="$event.stopPropagation()">
+        <span class="counter" *ngIf="photos.length > 1">{{ index + 1 }} / {{ photos.length }}</span>
+        <button mat-icon-button class="viewer-btn" (click)="close()" aria-label="Close photo">
+            <mat-icon>close</mat-icon>
+        </button>
+    </div>
+
+    <div class="viewer-stage">
+        <img *ngIf="current" class="viewer-img" [src]="current.url" [alt]="caption" (click)="$event.stopPropagation()" />
+
+        <button *ngIf="photos.length > 1" mat-icon-button class="viewer-btn nav nav-left" (click)="prev(); $event.stopPropagation()" aria-label="Previous photo">
+            <mat-icon>chevron_left</mat-icon>
+        </button>
+        <button *ngIf="photos.length > 1" mat-icon-button class="viewer-btn nav nav-right" (click)="next(); $event.stopPropagation()" aria-label="Next photo">
+            <mat-icon>chevron_right</mat-icon>
+        </button>
+    </div>
+
+    <div class="viewer-caption" *ngIf="caption" (click)="$event.stopPropagation()">{{ caption }}</div>
+</div>

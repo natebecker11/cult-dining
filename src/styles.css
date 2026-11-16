@@ -3469,3 +3469,20 @@ th {
 }
 
 
+
+/* Dinner journal dialogs */
+.photo-viewer-panel .mdc-dialog__surface,
+.photo-viewer-panel .mat-mdc-dialog-surface {
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
+.photo-viewer-panel .mat-mdc-dialog-container {
+  padding: 0;
+}
+
+.journal-dialog-panel .mdc-dialog__surface,
+.lookup-dialog-panel .mdc-dialog__surface {
+  border-radius: 8px !important;
+}

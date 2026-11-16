@@ -12,6 +12,9 @@ import { MarkdownModule } from 'ngx-markdown';
 import { ManageCountriesComponent } from './manage-countries/manage-countries.component';
 import { AppRoutingModule } from './app-routing.module';
 import { GlobeComponent } from './globe/globe.component';
+import { CountryJournalDialogComponent } from './country-journal-dialog/country-journal-dialog.component';
+import { CountryLookupDialogComponent } from './country-lookup-dialog/country-lookup-dialog.component';
+import { PhotoViewerComponent } from './photo-viewer/photo-viewer.component';
 
 @NgModule({
   declarations: [
@@ -19,7 +22,10 @@ import { GlobeComponent } from './globe/globe.component';
     WheelComponent,
     WheelResultModalComponent,
     ManageCountriesComponent,
-    GlobeComponent
+    GlobeComponent,
+    CountryJournalDialogComponent,
+    CountryLookupDialogComponent,
+    PhotoViewerComponent
   ],
   imports: [
     BrowserModule,

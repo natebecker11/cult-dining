@@ -1,4 +1,7 @@
-import { Component, ElementRef, OnInit, ViewChild, AfterViewInit } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild, AfterViewInit, NgZone } from '@angular/core';
+import { CountryEntriesService } from '../services/country-entries.service';
+import { JournalLauncherService } from '../services/journal-launcher.service';
+import { CountryEntryCounts } from '../models/country-entry';
 import Globe from 'globe.gl';
 import { FirebaseService } from '../firebase.service';
 import { LlmService } from '../services/llm.service';
@@ -32,10 +35,22 @@ export class GlobeComponent implements OnInit, AfterViewInit
   public summaryText: string = "";
   public isGeneratingSummary: boolean = false;
 
-  constructor(private _firebase: FirebaseService, private _llmService: LlmService) { }
+  /** Globe shape name (properties.NAME) -> our country name, for countries we've had a dinner for */
+  private usedGeoToCountry = new Map<string, string>();
+  /** Journal dish/photo counts per country, for the hover tooltip */
+  private entryCounts = new Map<string, CountryEntryCounts>();
+
+  constructor(
+    private _firebase: FirebaseService,
+    private _llmService: LlmService,
+    private _entries: CountryEntriesService,
+    private _journal: JournalLauncherService,
+    private _zone: NgZone
+  ) { }
 
   async ngOnInit(): Promise<void>
   {
+    this._entries.getCounts().then(counts => this.entryCounts = counts);
     this.unusedCountries = await this._firebase.GetCountriesList();
     this.usedCountries = await this._firebase.GetUsedCountries();
     this.refreshUsedCountries();
@@ -111,12 +126,20 @@ export class GlobeComponent implements OnInit, AfterViewInit
         this.globe.polygonAltitude((d: any) => d === hoverD ? 0.07 : 0.06);
       })
       .polygonsTransitionDuration(300)
+      .polygonLabel((feat: any) => this.journalTooltip(feat))
       .onPolygonClick((obj: any) =>
       {
         if (obj)
         {
           const { lat, lng } = this.getCentroid(obj.geometry);
           this.globe.pointOfView({ lat, lng, altitude: 1.6 }, 1000);
+
+          // Countries we've had a dinner for open their journal (not mid-spin, so the reveal isn't interrupted)
+          const country = this.usedGeoToCountry.get(obj.properties.NAME);
+          if (country && !this.isSpinning)
+          {
+            this._zone.run(() => this._journal.openJournal(country));
+          }
         }
       })
       .labelLat((d: any) => d.lat)
@@ -142,6 +165,20 @@ export class GlobeComponent implements OnInit, AfterViewInit
     });
   }
 
+  /** Hover tooltip for countries we've had a dinner for; other countries get none. */
+  private journalTooltip(feat: any): string
+  {
+    const country = this.usedGeoToCountry.get(feat?.properties?.NAME);
+    if (!country) return '';
+    const c = this.entryCounts.get(country) ?? { dishes: 0, photos: 0 };
+    const detail = c.dishes || c.photos
+      ? `${c.dishes} ${c.dishes === 1 ? 'dish' : 'dishes'} · ${c.photos} ${c.photos === 1 ? 'photo' : 'photos'}`
+      : 'No entries yet';
+    return `<div style="background:rgba(0,0,0,.85);color:#fff;padding:8px 12px;border-radius:6px;font:13px/1.4 Roboto,sans-serif">`
+      + `<b style="font-weight:500">${escapeHtml(country)}</b><br>`
+      + `<span style="color:#b0bec5">${detail} · Click to open</span></div>`;
+  }
+
   private refreshUsedCountries(): void
   {
     if (!this.countriesFeature || this.countriesFeature.length === 0) return;
@@ -149,7 +186,11 @@ export class GlobeComponent implements OnInit, AfterViewInit
     this.usedCountries.forEach(name =>
     {
       const match = this.findCountryFeature(name);
-      if (match) this.usedGeoNames.add(match.properties.NAME);
+      if (match)
+      {
+        this.usedGeoNames.add(match.properties.NAME);
+        this.usedGeoToCountry.set(match.properties.NAME, name);
+      }
     });
 
     if (this.globe)
@@ -459,4 +500,9 @@ export class GlobeComponent implements OnInit, AfterViewInit
     coords.forEach((p: any) => { lng += p[0]; lat += p[1]; });
     return { lat: lat / coords.length, lng: lng / coords.length };
   }
+}
+
+function escapeHtml(value: string): string
+{
+  return value.replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch] as string));
 }

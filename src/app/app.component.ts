@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, HostListener, NgZone, OnInit } from '@angular/core';
+import { JournalLauncherService } from './services/journal-launcher.service';
 import { FirebaseService } from './firebase.service';
 import { ChartConfiguration } from 'src/models/ChartConfiguration';
 import { Router, NavigationEnd, Event } from '@angular/router';
@@ -28,10 +29,30 @@ export class AppComponent implements OnInit
 
   constructor(
     private _firebase: FirebaseService,
-    private _router: Router
+    private _router: Router,
+    private _journal: JournalLauncherService,
+    private _zone: NgZone
   )
   {
 
+  }
+
+  public openLookup()
+  {
+    this._journal.openLookup();
+  }
+
+  // "/" opens Look up country, unless the user is typing somewhere or is on the admin page
+  @HostListener('document:keydown', ['$event'])
+  public onGlobalKeydown(event: KeyboardEvent)
+  {
+    if (event.key !== '/' || event.ctrlKey || event.metaKey || event.altKey) return;
+    const target = event.target as HTMLElement | null;
+    if (target && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))) return;
+    if (this._router.url.startsWith('/admin')) return;
+    event.preventDefault();
+    // Document-level key events can arrive outside Angular's zone, so re-enter it before opening the dialog
+    this._zone.run(() => this.openLookup());
   }
 
   public login()

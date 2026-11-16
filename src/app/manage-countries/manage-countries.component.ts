@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FirebaseService } from '../firebase.service';
 import { Router } from '@angular/router';
+import { searchCountries } from '../utils/country-search';
 
 @Component({
   selector: 'app-manage-countries',
@@ -17,20 +18,10 @@ export class ManageCountriesComponent implements OnInit
   public currentUser$ = this._firebase.currentUser$;
   public unusedFilter: string = "";
 
+  // Accent-insensitive, closest match first (see utils/country-search.ts)
   public get filteredUnusedCountries(): string[]
   {
-    const term = this._normalize(this.unusedFilter.trim());
-    if (!term)
-    {
-      return this.unusedCountries;
-    }
-    return this.unusedCountries.filter(c => this._normalize(c).includes(term));
-  }
-
-  // Lowercase and strip accents so "curacao" finds "Curaçao (Netherlands)"
-  private _normalize(value: string): string
-  {
-    return value.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+    return searchCountries(this.unusedCountries, this.unusedFilter);
   }
 
   public onFilterInput(value: string)
@@ -42,19 +33,11 @@ export class ManageCountriesComponent implements OnInit
   // Best = exact match, then starts-with, then contains (so "congo" picks "Congo", "guinea" picks "Guinea").
   public addTopMatch()
   {
-    const term = this._normalize(this.unusedFilter.trim());
-    if (!term)
+    if (!this.unusedFilter.trim())
     {
       return;
     }
-    const rank = (c: string) =>
-    {
-      const n = this._normalize(c);
-      return n === term ? 0 : n.startsWith(term) ? 1 : 2;
-    };
-    const match = this.filteredUnusedCountries
-      .filter(c => !this.movedCountries.has(c))
-      .sort((a, b) => rank(a) - rank(b))[0];
+    const match = this.filteredUnusedCountries.find(c => !this.movedCountries.has(c));
     if (match)
     {
       this.moveToNewlyUsed(match);
