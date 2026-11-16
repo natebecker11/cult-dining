@@ -1,7 +1,7 @@
 import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { CountryEntriesService, NotContributorError } from '../services/country-entries.service';
-import { EntryPhoto } from '../models/country-entry';
+import { CountryEntriesService, NotAllowedError, NotContributorError } from '../services/country-entries.service';
+import { CountryEntry, EntryPhoto } from '../models/country-entry';
 import { ImageReadError } from '../utils/image-resize';
 
 export type AddEntryMode = 'photos' | 'dish';
@@ -10,6 +10,8 @@ export interface AddEntryDialogData
 {
   country: string;
   mode?: AddEntryMode;
+  /** Edit this dish instead of adding a new entry */
+  entry?: CountryEntry;
 }
 
 /** Closes with true when at least one entry was saved. */
@@ -20,7 +22,10 @@ type PhotoStatus = 'ready' | 'uploading' | 'done' | 'error';
 interface PendingPhoto
 {
   key: number;
-  file: File;
+  /** null for a photo the dish already had (editing) */
+  file: File | null;
+  /** The dish already had this photo before this edit */
+  existing?: boolean;
   previewUrl: string;
   status: PhotoStatus;
   progress: number;
@@ -60,9 +65,14 @@ export class AddEntryDialogComponent implements OnInit, OnDestroy
   public readonly cookMax = COOK_MAX;
   public readonly maxPhotos = MAX_PHOTOS;
 
+  /** The dish being edited, or null when adding */
+  public readonly editing: CountryEntry | null;
+
   private _nextKey = 1;
   private _dishEntryId: string | null = null;
   private _savedCount = 0;
+  /** Editing: photos the dish had that were removed; their files are deleted after the save succeeds */
+  private _removedExisting: EntryPhoto[] = [];
 
   constructor(
     @Inject(MAT_DIALOG_DATA) data: AddEntryDialogData,
@@ -71,7 +81,31 @@ export class AddEntryDialogComponent implements OnInit, OnDestroy
   )
   {
     this.country = data.country;
-    this.mode = data.mode ?? 'dish';
+    this.editing = data.entry?.type === 'dish' ? data.entry : null;
+    this.mode = this.editing ? 'dish' : (data.mode ?? 'dish');
+
+    if (this.editing)
+    {
+      this._dishEntryId = this.editing.id;
+      this.title = this.editing.title ?? '';
+      this.madeBy = this.editing.madeBy ?? '';
+      this.description = this.editing.description ?? '';
+      this.recipeUrl = this.editing.recipeUrl ?? '';
+      this.photos = this.editing.photos.map(p => ({
+        key: this._nextKey++,
+        file: null,
+        existing: true,
+        previewUrl: p.thumbUrl || p.url,
+        status: 'ready' as PhotoStatus,
+        progress: 1,
+        uploaded: p
+      }));
+    }
+  }
+
+  public get heading(): string
+  {
+    return this.editing ? `Edit ${this.editing.title ?? 'dish'}` : `Add to ${this.country}`;
   }
 
   async ngOnInit(): Promise<void>
@@ -85,7 +119,7 @@ export class AddEntryDialogComponent implements OnInit, OnDestroy
 
   ngOnDestroy(): void
   {
-    this.photos.forEach(p => URL.revokeObjectURL(p.previewUrl));
+    this.photos.filter(p => !p.existing).forEach(p => URL.revokeObjectURL(p.previewUrl));
   }
 
   // ---------- Form state ----------
@@ -101,7 +135,7 @@ export class AddEntryDialogComponent implements OnInit, OnDestroy
   /** Once anything has uploaded or saved, switching type would orphan work, so it's locked. */
   public get hasProgress(): boolean
   {
-    return this.photos.some(p => !!p.uploaded || p.status === 'done');
+    return this.photos.some(p => (!!p.uploaded && !p.existing) || p.status === 'done');
   }
 
   public get filteredCooks(): string[]
@@ -152,6 +186,7 @@ export class AddEntryDialogComponent implements OnInit, OnDestroy
   {
     if (this.busy) return this.mode === 'dish' ? 'Saving…' : 'Uploading…';
     if (this.failedCount) return 'Retry';
+    if (this.editing) return 'Save changes';
     if (this.mode === 'dish') return 'Save dish';
     const n = this.remainingPhotos.length;
     return n === 1 ? 'Upload 1 photo' : `Upload ${n} photos`;
@@ -166,16 +201,18 @@ export class AddEntryDialogComponent implements OnInit, OnDestroy
 
   public get uploadSummary(): string
   {
-    const uploading = this.photos.findIndex(p => p.status === 'uploading');
+    const fresh = this.photos.filter(p => !p.existing);
+    const uploading = fresh.findIndex(p => p.status === 'uploading');
     if (uploading < 0) return '';
-    return `Uploading ${uploading + 1} of ${this.photos.length}…`;
+    return `Uploading ${uploading + 1} of ${fresh.length}…`;
   }
 
   public get overallProgress(): number
   {
-    if (!this.photos.length) return 0;
-    const sum = this.photos.reduce((n, p) => n + (p.status === 'done' || p.uploaded ? 1 : p.progress), 0);
-    return Math.round((sum / this.photos.length) * 100);
+    const fresh = this.photos.filter(p => !p.existing);
+    if (!fresh.length) return 100;
+    const sum = fresh.reduce((n, p) => n + (p.status === 'done' || p.uploaded ? 1 : p.progress), 0);
+    return Math.round((sum / fresh.length) * 100);
   }
 
   // ---------- Picking photos ----------
@@ -222,8 +259,15 @@ export class AddEntryDialogComponent implements OnInit, OnDestroy
   public removePhoto(photo: PendingPhoto): void
   {
     if (this.busy || photo.status === 'done') return;
-    if (photo.uploaded) this._entries.deleteUploadedPhotos([photo.uploaded]);
-    URL.revokeObjectURL(photo.previewUrl);
+    if (photo.existing)
+    {
+      // Keep the file until the edit is saved, so Cancel leaves the dish exactly as it was
+      this._removedExisting.push(photo.uploaded!);
+    } else
+    {
+      if (photo.uploaded) this._entries.deleteUploadedPhotos([photo.uploaded]);
+      URL.revokeObjectURL(photo.previewUrl);
+    }
     this.photos = this.photos.filter(p => p !== photo);
   }
 
@@ -309,9 +353,15 @@ export class AddEntryDialogComponent implements OnInit, OnDestroy
 
     try
     {
-      await this._entries.createDishEntry(this.country, entryId,
-        { title: this.title, madeBy: this.madeBy, description: this.description, recipeUrl: this.recipeUrl },
-        this.photos.map(p => p.uploaded!));
+      const dish = { title: this.title, madeBy: this.madeBy, description: this.description, recipeUrl: this.recipeUrl };
+      const photos = this.photos.map(p => p.uploaded!);
+      if (this.editing)
+      {
+        await this._entries.updateDishEntry(this.editing, dish, photos, this._removedExisting);
+      } else
+      {
+        await this._entries.createDishEntry(this.country, entryId, dish, photos);
+      }
       this.photos.forEach(p => p.status = 'done');
       this._savedCount++;
       this._close();
@@ -326,9 +376,8 @@ export class AddEntryDialogComponent implements OnInit, OnDestroy
     photo.status = 'uploading';
     photo.progress = 0;
     photo.error = undefined;
-    // File name comes from the photo's fixed key, not its list position, so removing a photo
-    // and retrying can never reuse the name of a file that's still being deleted
-    const uploaded = await this._entries.uploadPhoto(this.country, entryId, photo.key - 1, photo.file, f => photo.progress = f);
+    // The service gives every upload a fresh file name (Storage won't let a retry overwrite one)
+    const uploaded = await this._entries.uploadPhoto(this.country, entryId, photo.file!, f => photo.progress = f);
     photo.progress = 1;
     if (this.mode === 'dish') photo.status = 'ready'; // dish photos are "done" only when the dish saves
     return uploaded;
@@ -345,7 +394,7 @@ export class AddEntryDialogComponent implements OnInit, OnDestroy
 
   private _message(e: unknown, fallback: string): string
   {
-    if (e instanceof NotContributorError || e instanceof ImageReadError) return e.message;
+    if (e instanceof NotContributorError || e instanceof NotAllowedError || e instanceof ImageReadError) return e.message;
     const code = (e as { code?: string })?.code ?? '';
     if (code.includes('unauthorized') || code.includes('permission-denied'))
     {
@@ -361,7 +410,8 @@ export class AddEntryDialogComponent implements OnInit, OnDestroy
   {
     if (this.busy) return;
     // Photos uploaded for entries that were never saved would sit in Storage unused
-    const orphans = this.photos.filter(p => p.uploaded && p.status !== 'done').map(p => p.uploaded!);
+    // (photos the dish already had are never deleted on Cancel)
+    const orphans = this.photos.filter(p => p.uploaded && !p.existing && p.status !== 'done').map(p => p.uploaded!);
     if (orphans.length) this._entries.deleteUploadedPhotos(orphans);
     this._close();
   }

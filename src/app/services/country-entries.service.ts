@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { collection, doc, getDocs, query, serverTimestamp, setDoc, where, QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
+import { collection, deleteDoc, deleteField, doc, getDocs, query, serverTimestamp, setDoc, updateDoc, where, QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 import { deleteObject, getDownloadURL, ref, uploadBytesResumable } from 'firebase/storage';
 import { Subject } from 'rxjs';
 import { FirebaseService } from '../firebase.service';
@@ -28,6 +28,15 @@ export class NotContributorError extends Error
     constructor()
     {
         super('Only contributors can add entries. Ask an admin to add your Google email to Contributors.');
+    }
+}
+
+/** Thrown when someone tries to edit or delete an entry that isn't theirs (and they aren't an admin). */
+export class NotAllowedError extends Error
+{
+    constructor()
+    {
+        super('Only the person who added this entry, or an admin, can change it.');
     }
 }
 
@@ -114,8 +123,10 @@ export class CountryEntriesService
     /**
      * Resizes one photo, uploads it plus a thumbnail, and returns where they are.
      * onProgress gets 0..1 across both files.
+     * Every call writes to new file names: storage.rules allow creating files but not overwriting them,
+     * so a retry after a half-finished upload must not reuse a name.
      */
-    public async uploadPhoto(country: string, entryId: string, index: number, file: Blob, onProgress?: (fraction: number) => void): Promise<EntryPhoto>
+    public async uploadPhoto(country: string, entryId: string, file: Blob, onProgress?: (fraction: number) => void): Promise<EntryPhoto>
     {
         const user = this._requireContributor();
         const full = await resizeImage(file, FULL_EDGE);
@@ -125,14 +136,23 @@ export class CountryEntriesService
             throw new Error('This photo is still over 5 MB after resizing. Try a different photo.');
         }
 
-        const base = `${STORAGE_ROOT}/${slug(country)}/${entryId}/${index + 1}`;
+        const base = `${STORAGE_ROOT}/${slug(country)}/${entryId}/${uniqueName()}`;
         const total = full.blob.size + thumb.blob.size;
         let fullSent = 0;
         let thumbSent = 0;
         const report = () => onProgress?.(total ? (fullSent + thumbSent) / total : 1);
 
         const url = await this._upload(`${base}.jpg`, full.blob, user.uid, sent => { fullSent = sent; report(); });
-        const thumbUrl = await this._upload(`${base}_thumb.jpg`, thumb.blob, user.uid, sent => { thumbSent = sent; report(); });
+        let thumbUrl: string;
+        try
+        {
+            thumbUrl = await this._upload(`${base}_thumb.jpg`, thumb.blob, user.uid, sent => { thumbSent = sent; report(); });
+        } catch (e)
+        {
+            // Don't leave the full-size file behind when its thumbnail fails
+            deleteObject(ref(this._firebase.storage, `${base}.jpg`)).catch(() => { });
+            throw e;
+        }
 
         return { path: `${base}.jpg`, url, thumbUrl, width: full.width, height: full.height };
     }
@@ -172,6 +192,43 @@ export class CountryEntriesService
         this._afterWrite(country);
     }
 
+    /** Whether the signed-in user may edit or delete this entry: the contributor who added it, or any admin. */
+    public canManage(entry: CountryEntry): boolean
+    {
+        const user = this._firebase.currentUser;
+        if (!user) return false;
+        if (this._firebase.isAdmin) return true;
+        return this._firebase.isContributor && entry.createdBy?.uid === user.uid;
+    }
+
+    /**
+     * Saves changes to a dish: text fields and its full photo list (kept photos plus newly uploaded ones).
+     * Files for photos removed from the list are deleted after the save succeeds.
+     */
+    public async updateDishEntry(entry: CountryEntry, dish: DishInput, photos: EntryPhoto[], removed: EntryPhoto[]): Promise<void>
+    {
+        this._requireCanManage(entry);
+        await updateDoc(doc(this._firebase.db, COLLECTION, entry.id), {
+            title: dish.title.trim(),
+            madeBy: dish.madeBy.trim(),
+            description: dish.description?.trim() ? dish.description.trim() : deleteField(),
+            recipeUrl: dish.recipeUrl?.trim() ? dish.recipeUrl.trim() : deleteField(),
+            photos,
+            updatedAt: serverTimestamp()
+        });
+        this._afterWrite(entry.country);
+        if (removed.length) await this.deleteUploadedPhotos(removed);
+    }
+
+    /** Deletes an entry, then its photo files (the entry goes first so the journal never shows broken photos). */
+    public async deleteEntry(entry: CountryEntry): Promise<void>
+    {
+        this._requireCanManage(entry);
+        await deleteDoc(doc(this._firebase.db, COLLECTION, entry.id));
+        this._afterWrite(entry.country);
+        await this.deleteUploadedPhotos(entry.photos);
+    }
+
     /** Best-effort removal of uploaded files that never made it into a saved entry. */
     public async deleteUploadedPhotos(photos: EntryPhoto[]): Promise<void>
     {
@@ -191,6 +248,14 @@ export class CountryEntriesService
             throw new NotContributorError();
         }
         return user;
+    }
+
+    private _requireCanManage(entry: CountryEntry): void
+    {
+        if (!this.canManage(entry))
+        {
+            throw new NotAllowedError();
+        }
     }
 
     private _createdBy(user: { uid: string, email: string | null, displayName: string | null })
@@ -240,6 +305,12 @@ export class CountryEntriesService
 function byCreatedAt(a: CountryEntry, b: CountryEntry): number
 {
     return (a.createdAt ?? 0) - (b.createdAt ?? 0);
+}
+
+/** A file name no other upload will use, e.g. "lq3k9x2a-7f3c" */
+function uniqueName(): string
+{
+    return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
 }
 
 /** Storage folder name for a country, e.g. "Curaçao (Netherlands)" -> "curacao-netherlands" */

@@ -14,7 +14,8 @@ export class LlmService
     initialize(apiKey: string)
     {
         this.genAI = new GoogleGenerativeAI(apiKey);
-        this.model = this.genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+        // gemini-2.5-flash isn't available to newer Google projects (404 "no longer available to new users")
+        this.model = this.genAI.getGenerativeModel({ model: "gemini-3.8-flash" });
         console.log("LlmService initialized with fetched key.");
     }
 

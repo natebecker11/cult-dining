@@ -41,7 +41,19 @@
                             <p *ngIf="dishes.length === 0" class="journal-state">No dishes yet.</p>
 
                             <article class="dish" *ngFor="let dish of dishes; trackBy: trackById" [id]="dishAnchor(dish)">
-                                <h3 class="dish-title">{{ dish.title }}</h3>
+                                <div class="dish-top">
+                                    <h3 class="dish-title">{{ dish.title }}</h3>
+                                    <ng-container *ngIf="canManage(dish)">
+                                        <button mat-icon-button class="entry-menu" [matMenuTriggerFor]="dishMenu"
+                                            [disabled]="deletingId === dish.id" [attr.aria-label]="'Options for ' + dish.title">
+                                            <mat-icon>more_vert</mat-icon>
+                                        </button>
+                                        <mat-menu #dishMenu="matMenu" xPosition="before">
+                                            <button mat-menu-item (click)="editDish(dish)"><mat-icon>edit</mat-icon><span>Edit</span></button>
+                                            <button mat-menu-item (click)="deleteEntry(dish)"><mat-icon>delete</mat-icon><span>Delete</span></button>
+                                        </mat-menu>
+                                    </ng-container>
+                                </div>
                                 <div class="made-by">
                                     <mat-icon>person</mat-icon>
                                     Made by {{ dish.madeBy || 'someone' }}
@@ -68,10 +80,16 @@
                         <div class="tab-panel">
                             <p *ngIf="photoEntries.length === 0" class="journal-state">No general photos yet. Dish photos are on the Dishes tab.</p>
                             <div class="grid">
-                                <button type="button" class="thumb grid-thumb" *ngFor="let photo of generalPhotos; let i = index; trackBy: trackByPhoto"
-                                    (click)="openGeneralPhoto(i)" [attr.aria-label]="'Open photo ' + (i + 1)">
-                                    <img [src]="photo.thumbUrl || photo.url" alt="" loading="lazy" />
-                                </button>
+                                <div class="grid-cell" *ngFor="let photo of generalPhotos; let i = index; trackBy: trackByPhoto">
+                                    <button type="button" class="thumb grid-thumb" (click)="openGeneralPhoto(i)" [attr.aria-label]="'Open photo ' + (i + 1)">
+                                        <img [src]="photo.thumbUrl || photo.url" alt="" loading="lazy" />
+                                    </button>
+                                    <button *ngIf="canManage(photoEntries[i])" type="button" class="photo-delete"
+                                        (click)="deleteEntry(photoEntries[i])" [disabled]="deletingId === photoEntries[i].id"
+                                        [attr.aria-label]="'Delete photo ' + (i + 1)" title="Delete photo">
+                                        <mat-icon>delete</mat-icon>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </mat-tab>
@@ -79,6 +97,8 @@
             </ng-container>
         </ng-container>
     </div>
+
+    <p class="action-error" *ngIf="actionError" role="alert">{{ actionError }}</p>
 
     <div class="journal-actions" *ngIf="!loading && !error && entries.length > 0">
         <ng-container *ngIf="isContributor$ | async; else visitorHint">

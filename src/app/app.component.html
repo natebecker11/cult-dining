@@ -2,12 +2,11 @@
   <canvas baseChart [datasets]="DataSets" [labels]="Labels" [options]="Configuration.Options"  [legend]="Configuration.ShowLegend" [type]="Configuration.ChartType" (chartHover)="OnHoverChart()" (chartClick)="OnClickChart()"></canvas>
 </div>    -->
 <!-- <button (click)="UploadCountries()">Upload </button> -->
-<div *ngIf="showGlobalHeader$ | async"
-  style="position: absolute; top: 10px; right: 10px; z-index: 1000; display: flex; gap: 10px; align-items: center;">
+<div *ngIf="showGlobalHeader$ | async" class="global-header">
   <ng-container *ngIf="currentUser$ | async as user; else loginBtn">
-    <span style="font-weight: 500; margin-right: 10px;">Welcome, {{ user.displayName }}!</span>
-    <button mat-raised-button color="primary" (click)="openLookup()" title="Look up country (/)">
-      <mat-icon>search</mat-icon>Look up country
+    <span class="welcome">Welcome, {{ user.displayName }}!</span>
+    <button mat-raised-button color="primary" (click)="openLookup()" title="Look up country (/)" aria-label="Look up country">
+      <mat-icon>search</mat-icon><span class="lookup-label">Look up country</span>
     </button>
     <button mat-raised-button color="warn" *ngIf="isAdmin$ | async" (click)="goToAdmin()">Manage Countries</button>
 
@@ -21,8 +20,8 @@
     <button mat-raised-button (click)="logout()">Logout</button>
   </ng-container>
   <ng-template #loginBtn>
-    <button mat-raised-button color="primary" (click)="openLookup()" title="Look up country (/)">
-      <mat-icon>search</mat-icon>Look up country
+    <button mat-raised-button color="primary" (click)="openLookup()" title="Look up country (/)" aria-label="Look up country">
+      <mat-icon>search</mat-icon><span class="lookup-label">Look up country</span>
     </button>
     <button mat-raised-button color="primary" (click)="login()">Login with Google</button>
 

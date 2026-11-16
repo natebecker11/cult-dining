@@ -1,5 +1,325 @@
+/* Full-screen globe. dvh = the height actually visible on phones (100vh includes the area behind
+   the mobile address bar, which is what pushed the Choose button off-screen). */
+.globe-page {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+}
+
+.globe-viz {
+    width: 100%;
+    height: 100%;
+}
+
+.admin-menu {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 100;
+}
+
+/* Desktop: the stack is invisible to layout; each panel positions itself on the page */
+.bottom-stack {
+    display: contents;
+}
+
+/* Chips are phone-only; on desktop the picks chip is just the panel heading */
+.panel-chip {
+    display: none;
+}
+
+/* ---------- Choose button + result ---------- */
+.spin-dock {
+    position: absolute;
+    bottom: 50px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    text-align: center;
+    max-width: calc(100vw - 32px);
+}
+
+.spin-btn {
+    font-size: 20px;
+    padding: 15px 30px;
+    height: auto;
+}
+
+.spin-result {
+    color: white;
+    font-size: 32px;
+    font-weight: bold;
+    line-height: 1.2;
+    text-shadow: 2px 2px 4px black;
+    overflow-wrap: anywhere;
+}
+
+/* ---------- Year summary ---------- */
+.summary-panel {
+    position: absolute;
+    top: 50%;
+    left: 20px;
+    transform: translateY(-50%);
+    z-index: 100;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 20px;
+    border-radius: 10px;
+    max-height: 80vh;
+    overflow-y: auto;
+    width: 400px;
+    display: flex;
+    flex-direction: column;
+    font-family: 'Roboto', sans-serif;
+}
+
+.summary-title {
+    text-align: center;
+    color: #FFD700;
+    margin: 0 0 20px;
+}
+
+.summary-loading {
+    text-align: center;
+    padding: 20px;
+    font-style: italic;
+    font-size: 18px;
+}
+
+.summary-text {
+    line-height: 1.6;
+    font-size: 15px;
+}
+
+/* ---------- This year's picks ---------- */
+.history-panel {
+    position: absolute;
+    top: 50%;
+    right: 20px;
+    transform: translateY(-50%);
+    z-index: 100;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 20px;
+    border-radius: 10px;
+    max-height: 80vh;
+    width: 300px;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+}
+
+/* On desktop the toggle is just the heading */
+.panel-chip.history-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    margin: 0 0 10px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: 700 1.5em 'Roboto', sans-serif;
+    cursor: default;
+}
+
+.history-count,
+.chip-icon,
+.chip-chevron {
+    display: none;
+}
+
+.history-list {
+    flex-grow: 1;
+    min-height: 0;
+    overflow-y: auto;
+    margin-bottom: 10px;
+}
+
+.history-item {
+    font-size: 16px;
+    margin-bottom: 5px;
+    cursor: pointer;
+}
+
 .history-item:hover {
     color: #ffd700;
     /* Gold color on hover */
     text-decoration: underline;
+}
+
+.history-empty {
+    text-align: center;
+    font-style: italic;
+    color: #ccc;
+}
+
+.copy-btn {
+    width: 100%;
+}
+
+/* ---------- Phones ---------- */
+@media (max-width: 600px) {
+    /* Everything stacks at the bottom of what's actually visible:
+       [open panel] / [minimized chips side by side] / [result] / [button] */
+    .bottom-stack {
+        position: absolute;
+        left: 12px;
+        right: 12px;
+        bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+        z-index: 100;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: flex-end;
+        gap: 10px;
+        pointer-events: none; /* let the globe get touches between the pieces */
+    }
+
+    .bottom-stack > * {
+        pointer-events: auto;
+    }
+
+    .summary-panel,
+    .history-panel,
+    .spin-dock {
+        position: static;
+        transform: none;
+        width: auto;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    /* The chip: minimized state, and the header bar of an open panel */
+    .panel-chip,
+    .panel-chip.history-toggle {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        width: auto;
+        margin: 0;
+        padding: 6px 10px 6px 12px;
+        border: 0;
+        border-radius: 18px;
+        background: none;
+        color: #fff;
+        font: 500 14px Roboto, sans-serif;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+    .chip-icon,
+    .chip-chevron,
+    .history-count {
+        display: inline;
+    }
+
+    .chip-icon,
+    .chip-chevron {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+    }
+
+    .chip-icon {
+        color: #ffd700;
+    }
+
+    /* Keep both chips on one row: the year is already in the header area and the summary title */
+    .chip-year {
+        display: none;
+    }
+
+    .history-count {
+        color: #ffd700;
+        font-variant-numeric: tabular-nums;
+    }
+
+    /* Minimized panels are just their chip, side by side above the result */
+    .summary-panel.minimized,
+    .history-panel:not(.open) {
+        order: 2;
+        padding: 0;
+        border-radius: 18px;
+        background: rgba(0, 0, 0, 0.75);
+        overflow: visible;
+    }
+
+    .summary-panel.minimized .summary-body,
+    .history-panel:not(.open) .history-list,
+    .history-panel:not(.open) .copy-btn {
+        display: none;
+    }
+
+    /* An open panel spans the width above the chips, with its chip as a header bar */
+    .summary-panel:not(.minimized),
+    .history-panel.open {
+        order: 1;
+        flex-basis: 100%;
+        max-height: 55dvh;
+        padding: 4px 12px 12px;
+        border-radius: 12px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .summary-panel:not(.minimized) .panel-chip,
+    .history-panel.open .panel-chip {
+        align-self: stretch;
+        padding: 8px 0;
+        border-radius: 0;
+    }
+
+    .summary-panel:not(.minimized) .chip-chevron,
+    .history-panel.open .chip-chevron {
+        margin-left: auto;
+    }
+
+    .summary-body {
+        min-height: 0;
+        overflow-y: auto;
+    }
+
+    .summary-title {
+        font-size: 17px;
+        margin-bottom: 8px;
+    }
+
+    .summary-text {
+        font-size: 14px;
+    }
+
+    .history-panel.open .history-list {
+        margin: 4px 0 10px;
+    }
+
+    .history-item {
+        font-size: 15px;
+    }
+
+    /* Result above the button */
+    .spin-dock {
+        order: 3;
+        flex-basis: 100%;
+        flex-direction: column-reverse;
+        gap: 10px;
+    }
+
+    .spin-btn {
+        font-size: 18px;
+        padding: 12px 24px;
+    }
+
+    .spin-result {
+        font-size: 26px;
+    }
 }
