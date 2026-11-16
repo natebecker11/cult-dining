@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { FirebaseApp, initializeApp } from "firebase/app";
 import { Firestore, getFirestore, doc, getDoc } from "firebase/firestore";
 import { Auth, getAuth, GoogleAuthProvider, signInWithPopup, signOut, User, onAuthStateChanged } from "firebase/auth";
+import { FirebaseStorage, getStorage } from "firebase/storage";
 import { BehaviorSubject } from 'rxjs';
 
 import { collection, addDoc, getDocs, writeBatch } from "firebase/firestore";
@@ -30,6 +31,7 @@ export class FirebaseService
     this._app = initializeApp(firebaseConfig);
     this._db = getFirestore(this._app);
     this._auth = getAuth(this._app);
+    this._storage = getStorage(this._app);
 
     onAuthStateChanged(this._auth, async (user) =>
     {
@@ -68,6 +70,7 @@ export class FirebaseService
   private _app: FirebaseApp;
   private _db: Firestore;
   private _auth: Auth;
+  private _storage: FirebaseStorage;
 
   private currentUserSubject = new BehaviorSubject<User | null>(null);
   public currentUser$ = this.currentUserSubject.asObservable();
@@ -82,6 +85,24 @@ export class FirebaseService
   public get db(): Firestore
   {
     return this._db;
+  }
+
+  /** Shared Storage instance (default bucket) for journal photos. */
+  public get storage(): FirebaseStorage
+  {
+    return this._storage;
+  }
+
+  /** The signed-in user right now, or null. */
+  public get currentUser(): User | null
+  {
+    return this.currentUserSubject.value;
+  }
+
+  /** Whether the signed-in user is in the Contributors allowlist right now. */
+  public get isContributor(): boolean
+  {
+    return this.isContributorSubject.value;
   }
 
   public async loginWithGoogle()

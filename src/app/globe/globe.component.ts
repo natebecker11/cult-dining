@@ -51,6 +51,8 @@ export class GlobeComponent implements OnInit, AfterViewInit
   async ngOnInit(): Promise<void>
   {
     this._entries.getCounts().then(counts => this.entryCounts = counts);
+    // Keep the hover counts current after someone adds an entry
+    this._entries.changed$.subscribe(() => this._entries.getCounts().then(counts => this.entryCounts = counts));
     this.unusedCountries = await this._firebase.GetCountriesList();
     this.usedCountries = await this._firebase.GetUsedCountries();
     this.refreshUsedCountries();

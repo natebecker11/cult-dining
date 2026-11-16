@@ -15,6 +15,8 @@ import { GlobeComponent } from './globe/globe.component';
 import { CountryJournalDialogComponent } from './country-journal-dialog/country-journal-dialog.component';
 import { CountryLookupDialogComponent } from './country-lookup-dialog/country-lookup-dialog.component';
 import { PhotoViewerComponent } from './photo-viewer/photo-viewer.component';
+import { AddEntryDialogComponent } from './add-entry-dialog/add-entry-dialog.component';
+import { FormsModule } from '@angular/forms';
 
 @NgModule({
   declarations: [
@@ -25,7 +27,8 @@ import { PhotoViewerComponent } from './photo-viewer/photo-viewer.component';
     GlobeComponent,
     CountryJournalDialogComponent,
     CountryLookupDialogComponent,
-    PhotoViewerComponent
+    PhotoViewerComponent,
+    AddEntryDialogComponent
   ],
   imports: [
     BrowserModule,
@@ -34,6 +37,7 @@ import { PhotoViewerComponent } from './photo-viewer/photo-viewer.component';
     MaterialModule,
     BrowserAnimationsModule,
     HttpClientModule,
+    FormsModule,
     MarkdownModule.forRoot()
   ],
   providers: [],

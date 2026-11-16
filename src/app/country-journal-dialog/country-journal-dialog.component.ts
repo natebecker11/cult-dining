@@ -3,6 +3,8 @@ import { MAT_DIALOG_DATA, MatDialog } from '@angular/material/dialog';
 import { CountryEntriesService } from '../services/country-entries.service';
 import { CountryEntry, EntryPhoto } from '../models/country-entry';
 import { PhotoViewerComponent, PhotoViewerData } from '../photo-viewer/photo-viewer.component';
+import { FirebaseService } from '../firebase.service';
+import { AddEntryDialogComponent, AddEntryDialogData, AddEntryDialogResult, AddEntryMode } from '../add-entry-dialog/add-entry-dialog.component';
 
 export interface CountryJournalDialogData
 {
@@ -29,10 +31,14 @@ export class CountryJournalDialogComponent implements OnInit
   public generalPhotos: EntryPhoto[] = [];
   public tabIndex = 0;
 
+  public isContributor$ = this._firebase.isContributor$;
+  public currentUser$ = this._firebase.currentUser$;
+
   constructor(
     @Inject(MAT_DIALOG_DATA) data: CountryJournalDialogData,
     private _entries: CountryEntriesService,
-    private _dialog: MatDialog
+    private _dialog: MatDialog,
+    private _firebase: FirebaseService
   )
   {
     this.country = data.country;
@@ -40,9 +46,15 @@ export class CountryJournalDialogComponent implements OnInit
 
   async ngOnInit(): Promise<void>
   {
+    await this.load();
+  }
+
+  public async load(preferTab?: AddEntryMode): Promise<void>
+  {
+    this.error = '';
     try
     {
-      this.setEntries(await this._entries.getEntries(this.country));
+      this.setEntries(await this._entries.getEntries(this.country), preferTab);
     } catch (e)
     {
       console.error('Failed to load journal for', this.country, e);
@@ -53,14 +65,38 @@ export class CountryJournalDialogComponent implements OnInit
     }
   }
 
-  public setEntries(entries: CountryEntry[]): void
+  public setEntries(entries: CountryEntry[], preferTab?: AddEntryMode): void
   {
     this.entries = entries;
     this.dishes = entries.filter(e => e.type === 'dish');
     this.photoEntries = entries.filter(e => e.type === 'photo' && e.photos.length > 0);
     this.generalPhotos = this.photoEntries.map(e => e.photos[0]);
-    // Open on Photos when there are photos but no dishes
-    this.tabIndex = this.dishes.length === 0 && this.photoEntries.length > 0 ? 1 : 0;
+    if (preferTab)
+    {
+      // Show what was just added
+      this.tabIndex = preferTab === 'photos' ? 1 : 0;
+    } else
+    {
+      // Open on Photos when there are photos but no dishes
+      this.tabIndex = this.dishes.length === 0 && this.photoEntries.length > 0 ? 1 : 0;
+    }
+  }
+
+  /** Contributors only: the button is hidden for everyone else, and the service and rules check again. */
+  public openAdd(mode: AddEntryMode = this.tabIndex === 1 ? 'photos' : 'dish'): void
+  {
+    if (!this._firebase.isContributor) return;
+    this._dialog.open<AddEntryDialogComponent, AddEntryDialogData, AddEntryDialogResult>(AddEntryDialogComponent, {
+      data: { country: this.country, mode },
+      width: '560px',
+      maxWidth: '95vw',
+      maxHeight: '90vh',
+      autoFocus: false,
+      panelClass: 'journal-dialog-panel'
+    }).afterClosed().subscribe(saved =>
+    {
+      if (saved) this.load(mode);
+    });
   }
 
   public get summary(): string

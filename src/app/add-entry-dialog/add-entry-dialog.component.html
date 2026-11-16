@@ -1,0 +1,89 @@
+<div class="add">
+    <div class="add-header">
+        <h2 class="add-title">Add to {{ country }}</h2>
+        <button mat-icon-button (click)="cancel()" [disabled]="busy" aria-label="Close">
+            <mat-icon>close</mat-icon>
+        </button>
+    </div>
+
+    <div class="add-body">
+        <mat-button-toggle-group class="type-toggle" [value]="mode" (change)="setMode($event.value)"
+            [disabled]="busy || hasProgress" aria-label="Entry type">
+            <mat-button-toggle value="photos"><mat-icon>photo_library</mat-icon> Photos</mat-button-toggle>
+            <mat-button-toggle value="dish"><mat-icon>restaurant</mat-icon> Dish</mat-button-toggle>
+        </mat-button-toggle-group>
+
+        <!-- Dish details -->
+        <div *ngIf="mode === 'dish'" class="dish-fields">
+            <mat-form-field appearance="outline">
+                <mat-label>Dish name</mat-label>
+                <input matInput id="dish-title" [(ngModel)]="title" [maxlength]="titleMax" required [disabled]="busy" autocomplete="off" />
+                <mat-hint *ngIf="submitted && titleError" class="field-error">{{ titleError }}</mat-hint>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+                <mat-label>Made by</mat-label>
+                <input matInput id="dish-made-by" [(ngModel)]="madeBy" [matAutocomplete]="cooks" [maxlength]="cookMax" required [disabled]="busy" autocomplete="off" />
+                <mat-autocomplete #cooks="matAutocomplete">
+                    <mat-option *ngFor="let name of filteredCooks" [value]="name">{{ name }}</mat-option>
+                </mat-autocomplete>
+                <mat-hint *ngIf="submitted && cookError" class="field-error">{{ cookError }}</mat-hint>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+                <mat-label>Description</mat-label>
+                <textarea matInput id="dish-description" [(ngModel)]="description" rows="3" [disabled]="busy"
+                    placeholder="What made it good, what you'd change next time"></textarea>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+                <mat-label>Recipe link</mat-label>
+                <input matInput id="dish-recipe" type="url" [(ngModel)]="recipeUrl" [disabled]="busy" placeholder="https://" autocomplete="off" />
+                <mat-hint *ngIf="!recipeError">Optional</mat-hint>
+                <mat-hint *ngIf="recipeError && (submitted || recipeUrl.length > 8)" class="field-error">{{ recipeError }}</mat-hint>
+            </mat-form-field>
+        </div>
+
+        <!-- Photo picker -->
+        <div class="drop" [class.drag-over]="dragOver" [class.disabled]="busy"
+            (dragover)="onDragOver($event)" (dragleave)="dragOver = false" (drop)="onDrop($event)">
+            <mat-icon>add_photo_alternate</mat-icon>
+            <span>Drop photos here or</span>
+            <button mat-button color="primary" type="button" (click)="fileInput.click()" [disabled]="busy || photos.length >= maxPhotos">choose files</button>
+            <input #fileInput id="photo-input" type="file" accept="image/*" multiple hidden (change)="onFilesPicked(fileInput)" />
+        </div>
+        <p class="note" *ngIf="mode === 'photos'">Each photo becomes its own entry.</p>
+        <p class="note" *ngIf="mode === 'dish'">Photos are optional for a dish. They're resized before upload, so phone pictures go up quickly.</p>
+        <p class="note warn" *ngIf="notice">{{ notice }}</p>
+
+        <div class="thumbs" *ngIf="photos.length">
+            <div class="thumb" *ngFor="let photo of photos; trackBy: trackByKey" [class.error]="photo.status === 'error'" [class.done]="photo.status === 'done'">
+                <img [src]="photo.previewUrl" alt="" />
+                <button type="button" class="remove" *ngIf="photo.status !== 'done' && !busy" (click)="removePhoto(photo)" aria-label="Remove photo">
+                    <mat-icon>close</mat-icon>
+                </button>
+                <span class="badge" *ngIf="photo.status === 'done' || (mode === 'dish' && photo.uploaded)"><mat-icon>check</mat-icon></span>
+                <span class="badge bad" *ngIf="photo.status === 'error'" [title]="photo.error"><mat-icon>error</mat-icon></span>
+                <span class="bar" *ngIf="photo.status === 'uploading'"><i [style.width.%]="photo.progress * 100"></i></span>
+            </div>
+        </div>
+
+        <ul class="photo-errors" *ngIf="failedCount">
+            <ng-container *ngFor="let photo of photos; let i = index; trackBy: trackByKey">
+                <li *ngIf="photo.status === 'error'">Photo {{ i + 1 }}: {{ photo.error }}</li>
+            </ng-container>
+        </ul>
+
+        <div class="progress" *ngIf="busy && photos.length">
+            <mat-progress-bar mode="determinate" [value]="overallProgress"></mat-progress-bar>
+            <span class="note">{{ uploadSummary || 'Saving…' }}</span>
+        </div>
+
+        <p class="form-error" *ngIf="formError" role="alert">{{ formError }}</p>
+    </div>
+
+    <div class="add-actions">
+        <button mat-button type="button" (click)="cancel()" [disabled]="busy">Cancel</button>
+        <button mat-raised-button color="primary" type="button" (click)="save()" [disabled]="!canSave">{{ saveLabel }}</button>
+    </div>
+</div>
