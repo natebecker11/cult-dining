@@ -1,0 +1,35 @@
+// Cloud Storage security rules for cultural-dinners-f837a (default bucket).
+// Edit here, not in the Firebase console, then deploy:
+//   npx firebase-tools deploy --only storage
+// These rules read Firestore (Contributors/Admins). The first deploy asks to grant
+// Storage permission to read Firestore; accept it or every contributor check fails.
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function signedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+    function isContributor() {
+      return signedIn() && firestore.exists(/databases/(default)/documents/Contributors/$(request.auth.token.email));
+    }
+    function isAdmin() {
+      return signedIn() && firestore.exists(/databases/(default)/documents/Admins/$(request.auth.token.email));
+    }
+
+    // Journal photos: country-entries/{country}/{entryId}/{file}
+    // Uploads must carry custom metadata uploadedBy = the uploader's uid, so owners can delete their own files.
+    match /country-entries/{country}/{entryId}/{fileName} {
+      allow read: if true;
+      allow create: if isContributor()
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|png|webp)')
+        && request.resource.metadata.uploadedBy == request.auth.uid;
+      allow update: if false;
+      allow delete: if isAdmin()
+        || (isContributor() && resource.metadata.uploadedBy == request.auth.uid);
+    }
+
+    // Anything not listed above is denied.
+  }
+}

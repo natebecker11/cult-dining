@@ -1,0 +1,77 @@
+<div class="journal">
+    <div class="journal-header">
+        <div class="journal-heading">
+            <h2 class="journal-title">{{ country }}</h2>
+            <div class="journal-sub" *ngIf="summary">{{ summary }}</div>
+        </div>
+        <button mat-icon-button mat-dialog-close aria-label="Close">
+            <mat-icon>close</mat-icon>
+        </button>
+    </div>
+
+    <div class="journal-body">
+        <div *ngIf="loading" class="journal-state">
+            <mat-spinner diameter="32"></mat-spinner>
+        </div>
+
+        <div *ngIf="error" class="journal-state journal-error">{{ error }}</div>
+
+        <ng-container *ngIf="!loading && !error">
+            <div *ngIf="entries.length === 0" class="journal-empty">
+                <mat-icon>photo_camera</mat-icon>
+                <p>No photos or dishes yet for {{ country }}.</p>
+            </div>
+
+            <ng-container *ngIf="entries.length > 0">
+                <div class="cooks" *ngIf="dishes.length > 0" aria-label="Who made what">
+                    <button type="button" class="cook-chip" *ngFor="let dish of dishes; trackBy: trackById" (click)="scrollToDish(dish)">
+                        <span class="avatar" [style.background]="avatarColor(dish.madeBy)">{{ initial(dish.madeBy) }}</span>
+                        <span>{{ dish.madeBy || 'Unknown cook' }} · {{ dish.title }}</span>
+                    </button>
+                </div>
+
+                <mat-tab-group [(selectedIndex)]="tabIndex" animationDuration="0ms" mat-stretch-tabs="false" mat-align-tabs="start">
+                    <mat-tab [label]="'Dishes (' + dishes.length + ')'">
+                        <div class="tab-panel">
+                            <p *ngIf="dishes.length === 0" class="journal-state">No dishes yet.</p>
+
+                            <article class="dish" *ngFor="let dish of dishes; trackBy: trackById" [id]="dishAnchor(dish)">
+                                <h3 class="dish-title">{{ dish.title }}</h3>
+                                <div class="made-by">
+                                    <mat-icon>person</mat-icon>
+                                    Made by {{ dish.madeBy || 'someone' }}
+                                </div>
+
+                                <div class="strip" *ngIf="dish.photos.length > 0">
+                                    <button type="button" class="thumb" *ngFor="let photo of dish.photos; let i = index; trackBy: trackByPhoto"
+                                        (click)="openDishPhotos(dish, i)" [attr.aria-label]="'Open photo ' + (i + 1) + ' of ' + dish.title">
+                                        <img [src]="photo.thumbUrl || photo.url" alt="" loading="lazy" />
+                                    </button>
+                                </div>
+
+                                <p class="desc" *ngIf="dish.description">{{ dish.description }}</p>
+
+                                <a class="recipe" *ngIf="safeUrl(dish.recipeUrl) as url" [href]="url" target="_blank" rel="noopener noreferrer">
+                                    <mat-icon>open_in_new</mat-icon>
+                                    Recipe · {{ host(url) }}
+                                </a>
+                            </article>
+                        </div>
+                    </mat-tab>
+
+                    <mat-tab [label]="'Photos (' + photoEntries.length + ')'">
+                        <div class="tab-panel">
+                            <p *ngIf="photoEntries.length === 0" class="journal-state">No general photos yet. Dish photos are on the Dishes tab.</p>
+                            <div class="grid">
+                                <button type="button" class="thumb grid-thumb" *ngFor="let photo of generalPhotos; let i = index; trackBy: trackByPhoto"
+                                    (click)="openGeneralPhoto(i)" [attr.aria-label]="'Open photo ' + (i + 1)">
+                                    <img [src]="photo.thumbUrl || photo.url" alt="" loading="lazy" />
+                                </button>
+                            </div>
+                        </div>
+                    </mat-tab>
+                </mat-tab-group>
+            </ng-container>
+        </ng-container>
+    </div>
+</div>

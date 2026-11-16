@@ -1,0 +1,73 @@
+.viewer {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.95);
+  color: #fff;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+}
+
+.viewer-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 8px 8px 16px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.counter {
+  font-variant-numeric: tabular-nums;
+}
+
+.viewer-top .viewer-btn {
+  margin-left: auto;
+}
+
+.viewer-btn {
+  color: #fff;
+}
+
+.viewer-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  padding: 0 56px;
+}
+
+.viewer-img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+.nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.nav-left {
+  left: 8px;
+}
+
+.nav-right {
+  right: 8px;
+}
+
+.viewer-caption {
+  padding: 12px 16px 20px;
+  text-align: center;
+  font-size: 15px;
+}
+
+@media (max-width: 560px) {
+  .viewer-stage {
+    padding: 0 8px;
+  }
+}

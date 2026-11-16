@@ -46,9 +46,21 @@ export class FirebaseService
           console.error("Error checking admin status", e);
           this.isAdminSubject.next(false);
         }
+
+        // Contributors can add journal entries. Same allowlist pattern as Admins: doc ID is the email.
+        try
+        {
+          const contributorDoc = await getDoc(doc(this._db, "Contributors", user.email));
+          this.isContributorSubject.next(contributorDoc.exists());
+        } catch (e)
+        {
+          console.error("Error checking contributor status", e);
+          this.isContributorSubject.next(false);
+        }
       } else
       {
         this.isAdminSubject.next(false);
+        this.isContributorSubject.next(false);
       }
     });
   }
@@ -62,6 +74,15 @@ export class FirebaseService
 
   private isAdminSubject = new BehaviorSubject<boolean>(false);
   public isAdmin$ = this.isAdminSubject.asObservable();
+
+  private isContributorSubject = new BehaviorSubject<boolean>(false);
+  public isContributor$ = this.isContributorSubject.asObservable();
+
+  /** Shared Firestore instance for feature services (e.g. CountryEntriesService). */
+  public get db(): Firestore
+  {
+    return this._db;
+  }
 
   public async loginWithGoogle()
   {

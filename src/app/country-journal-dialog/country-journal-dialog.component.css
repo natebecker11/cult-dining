@@ -1,0 +1,233 @@
+.journal {
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+}
+
+.journal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 16px 8px 24px;
+}
+
+.journal-heading {
+  min-width: 0;
+}
+
+.journal-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.journal-sub {
+  margin-top: 4px;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.journal-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 24px 24px;
+}
+
+.journal-state {
+  display: flex;
+  justify-content: center;
+  padding: 24px 0;
+  color: rgba(0, 0, 0, 0.6);
+  font-size: 14px;
+  text-align: center;
+}
+
+.journal-error {
+  color: #c62828;
+}
+
+.journal-empty {
+  text-align: center;
+  padding: 28px 16px 12px;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.journal-empty mat-icon {
+  font-size: 44px;
+  width: 44px;
+  height: 44px;
+  color: #9fa8da;
+}
+
+.journal-empty p {
+  margin: 8px 0 0;
+  font-size: 14px;
+}
+
+/* Who made what */
+.cooks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 4px 0 8px;
+}
+
+.cook-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px 4px 4px;
+  border: 0;
+  border-radius: 16px;
+  background: #eceff9;
+  font: inherit;
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.87);
+  cursor: pointer;
+}
+
+.cook-chip:hover {
+  background: #e0e4f5;
+}
+
+.cook-chip:focus-visible {
+  outline: 2px solid #3f51b5;
+  outline-offset: 2px;
+}
+
+.avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 500;
+  color: #fff;
+  flex: none;
+}
+
+.tab-panel {
+  padding-top: 16px;
+}
+
+/* Dish cards */
+.dish {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  margin-bottom: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 8px;
+  scroll-margin-top: 8px;
+}
+
+.dish-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.made-by {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: -6px;
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.made-by mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+}
+
+.desc {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(0, 0, 0, 0.75);
+  white-space: pre-line;
+}
+
+.recipe {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 4px 10px;
+  border: 1px solid #c5cae9;
+  border-radius: 16px;
+  font-size: 13px;
+  color: #3f51b5;
+  text-decoration: none;
+}
+
+.recipe:hover {
+  background: #f1f2fa;
+}
+
+.recipe mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+}
+
+/* Photos */
+.strip {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.thumb {
+  flex: none;
+  width: 112px;
+  aspect-ratio: 4 / 3;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #e8eaf6;
+  cursor: zoom-in;
+}
+
+.thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.thumb:focus-visible {
+  outline: 2px solid #3f51b5;
+  outline-offset: 2px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 6px;
+}
+
+.grid-thumb {
+  width: 100%;
+}
+
+@media (max-width: 560px) {
+  .journal-header {
+    padding: 16px 8px 4px 16px;
+  }
+
+  .journal-body {
+    padding: 4px 16px 16px;
+  }
+}

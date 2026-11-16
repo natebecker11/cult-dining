@@ -1,0 +1,81 @@
+// Firestore security rules for cultural-dinners-f837a.
+// Edit here, not in the Firebase console, then deploy:
+//   npx firebase-tools deploy --only firestore:rules
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Google sign-ins always have a verified email; this blocks unverified sign-in methods
+    function signedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+
+    // Allowlists: a document whose ID is the person's email
+    function isAdmin() {
+      return signedIn() && exists(/databases/$(database)/documents/Admins/$(request.auth.token.email));
+    }
+    function isContributor() {
+      return signedIn() && exists(/databases/$(database)/documents/Contributors/$(request.auth.token.email));
+    }
+
+    // The signed-in contributor created this journal entry
+    function isOwner() {
+      return isContributor() && resource.data.createdBy.uid == request.auth.uid;
+    }
+
+    // Shape of a new journal entry (see src/app/models/country-entry.ts)
+    function validNewEntry() {
+      let d = request.resource.data;
+      return d.type in ['photo', 'dish']
+        && d.country is string && d.country.size() > 0
+        && d.photos is list && d.photos.size() <= 20
+        && d.createdBy.uid == request.auth.uid
+        && d.createdBy.email == request.auth.token.email
+        && ((d.type == 'photo' && d.photos.size() == 1)
+         || (d.type == 'dish'
+             && d.title is string && d.title.size() > 0 && d.title.size() <= 120
+             && d.madeBy is string && d.madeBy.size() > 0 && d.madeBy.size() <= 80));
+    }
+
+    // Allowlists: each person can check only their own entry (keeps everyone's email private).
+    // Managed in the Firebase console.
+    match /Admins/{email} {
+      allow read: if signedIn() && request.auth.token.email == email;
+      allow write: if false;
+    }
+    match /Contributors/{email} {
+      allow read: if signedIn() && request.auth.token.email == email;
+      allow write: if false;
+    }
+
+    // Country lists: everyone reads (globe and wheel), only admins change them
+    match /AllCountries/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /UsedCountries/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Gemini API key: the browser reads it for every visitor to generate the yearly summary.
+    // Keep this key in a Google Cloud project without billing so it can only use the free tier.
+    match /ApiKeys/{id} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Dinner journal: everyone reads; contributors add; the creator or an admin edits and deletes
+    match /CountryEntries/{entryId} {
+      allow read: if true;
+      allow create: if isContributor() && validNewEntry();
+      allow update: if (isAdmin() || isOwner())
+        && request.resource.data.createdBy == resource.data.createdBy
+        && request.resource.data.country == resource.data.country
+        && request.resource.data.type == resource.data.type;
+      allow delete: if isAdmin() || isOwner();
+    }
+
+    // Anything not listed above is denied.
+  }
+}
