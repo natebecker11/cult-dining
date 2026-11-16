@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnInit, ViewChild, AfterViewInit, NgZone } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild, AfterViewInit, NgZone, HostListener } from '@angular/core';
 import { CountryEntriesService } from '../services/country-entries.service';
 import { JournalLauncherService } from '../services/journal-launcher.service';
 import { CountryEntryCounts } from '../models/country-entry';
@@ -34,6 +34,38 @@ export class GlobeComponent implements OnInit, AfterViewInit
 
   public summaryText: string = "";
   public isGeneratingSummary: boolean = false;
+  /** Phones: whether the picks list is expanded (desktop always shows it) */
+  public historyOpen = false;
+  /** Phones: whether the year summary is minimized to a chip (desktop always shows it) */
+  public summaryMinimized = false;
+
+  /** Phones show one open panel at a time, so opening one minimizes the other */
+  public toggleHistory(): void
+  {
+    this.historyOpen = !this.historyOpen;
+    if (this.historyOpen) this.summaryMinimized = true;
+  }
+
+  public toggleSummary(): void
+  {
+    this.summaryMinimized = !this.summaryMinimized;
+    if (!this.summaryMinimized) this.historyOpen = false;
+  }
+
+  /** Camera distance: phones sit further back so the globe fits their narrow width */
+  private zoom(desktopAltitude: number): number
+  {
+    return window.innerWidth <= 600 ? desktopAltitude * 1.6 : desktopAltitude;
+  }
+
+  // Keep the globe sized to the visible area (phone address bar showing/hiding, rotation, window resizing)
+  @HostListener('window:resize')
+  public onResize(): void
+  {
+    if (!this.globe || !this.globeViz) return;
+    const el = this.globeViz.nativeElement as HTMLElement;
+    this.globe.width(el.clientWidth).height(el.clientHeight);
+  }
 
   /** Globe shape name (properties.NAME) -> our country name, for countries we've had a dinner for */
   private usedGeoToCountry = new Map<string, string>();
@@ -97,6 +129,8 @@ export class GlobeComponent implements OnInit, AfterViewInit
   ngAfterViewInit(): void
   {
     this.initGlobe();
+    this.onResize(); // size to the container, not the full window
+    this.globe.pointOfView({ altitude: this.zoom(2.5) }); // narrow screens start further out so the whole globe fits
   }
 
   private initGlobe(): void
@@ -134,7 +168,7 @@ export class GlobeComponent implements OnInit, AfterViewInit
         if (obj)
         {
           const { lat, lng } = this.getCentroid(obj.geometry);
-          this.globe.pointOfView({ lat, lng, altitude: 1.6 }, 1000);
+          this.globe.pointOfView({ lat, lng, altitude: this.zoom(1.6) }, 1000);
 
           // Countries we've had a dinner for open their journal (not mid-spin, so the reveal isn't interrupted)
           const country = this.usedGeoToCountry.get(obj.properties.NAME);
@@ -259,7 +293,7 @@ export class GlobeComponent implements OnInit, AfterViewInit
     this.drumrollAudio.play().catch(e => console.error("Error playing drumroll:", e));
 
     // Zoom out slightly for the spin
-    this.globe.pointOfView({ altitude: 2.5 }, 1000);
+    this.globe.pointOfView({ altitude: this.zoom(2.5) }, 1000);
 
     setTimeout(() =>
     {
@@ -271,7 +305,7 @@ export class GlobeComponent implements OnInit, AfterViewInit
         const { lat, lng } = this.getCentroid(match.geometry);
 
         // Zoom in closer (1.6)
-        this.globe.pointOfView({ lat, lng, altitude: 1.3 }, 3000);
+        this.globe.pointOfView({ lat, lng, altitude: this.zoom(1.3) }, 3000);
 
         setTimeout(() =>
         {
@@ -304,7 +338,7 @@ export class GlobeComponent implements OnInit, AfterViewInit
         const randomLng = (Math.random() * 360) - 180;
 
         // Zoom in closer (1.6) for unmapped too? Maybe keep it at 2 or 1.6. Let's do 1.6 for consistency.
-        this.globe.pointOfView({ lat: randomLat, lng: randomLng, altitude: 1.6 }, 3000);
+        this.globe.pointOfView({ lat: randomLat, lng: randomLng, altitude: this.zoom(1.6) }, 3000);
 
         setTimeout(() =>
         {
@@ -344,7 +378,7 @@ export class GlobeComponent implements OnInit, AfterViewInit
       const { lat, lng } = this.getCentroid(match.geometry);
       // Determine altitude based on country area or just a default? Default 2 is fine as used in spin.
       // Changing to 1.6 for zoom in effect
-      this.globe.pointOfView({ lat, lng, altitude: 1.6 }, 1000);
+      this.globe.pointOfView({ lat, lng, altitude: this.zoom(1.6) }, 1000);
       this.selectedCountry = match.properties.NAME;
       this.globe.polygonCapColor(this.globe.polygonCapColor()); // Update colors
       // updateLabels is handled automatically if historyGeoNames was updated, but here we just highlighted existing history.
@@ -394,6 +428,9 @@ export class GlobeComponent implements OnInit, AfterViewInit
   private async generateSummary()
   {
     this.isGeneratingSummary = true;
+    // Show the breakdown as it arrives (phones can minimize it afterwards)
+    this.summaryMinimized = false;
+    this.historyOpen = false;
     try
     {
       // Same year the Breakdown panel heading shows

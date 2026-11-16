@@ -1,37 +1,7 @@
-<div style="position: relative; width: 100vw; height: 100vh; overflow: hidden;">
-    <div #globeViz style="width: 100%; height: 100%;"></div>
+<div class="globe-page">
+    <div #globeViz class="globe-viz"></div>
 
-    <div
-        style="position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%); z-index: 100; text-align: center;">
-        <button mat-raised-button color="primary" style="font-size: 20px; padding: 15px 30px;"
-            (click)="spinToRandomCountry()" [disabled]="isSpinning" *ngIf="history.length < 12">
-            {{ isSpinning ? 'Choosing...' : 'Choose Next Country!' }}
-        </button>
-        <div *ngIf="selectedCountry && !isSpinning"
-            style="color: white; font-size: 32px; font-weight: bold; margin-top: 20px; text-shadow: 2px 2px 4px black;">
-            {{ selectedCountry }}
-        </div>
-    </div>
-
-    <!-- Summary Panel (Left Side) -->
-    <div *ngIf="history.length === 12"
-        style="position: absolute; top: 50%; left: 20px; transform: translateY(-50%); z-index: 100;
-               background: rgba(0,0,0,0.8); color: white; padding: 20px; border-radius: 10px;
-               max-height: 80vh; overflow-y: auto; width: 400px; display: flex; flex-direction: column; font-family: 'Roboto', sans-serif;">
-        <h2 style="text-align: center; color: #FFD700; margin-bottom: 20px;">Your {{nextYear}} Cultural Dinner
-            Breakdown!</h2>
-
-        <div *ngIf="isGeneratingSummary" style="text-align: center; padding: 20px;">
-            <p style="font-style: italic; font-size: 18px;">Consulting the Oracle...</p>
-            <!-- Could add a spinner here if material spinner is available, e.g. <mat-spinner></mat-spinner> -->
-        </div>
-
-        <div *ngIf="!isGeneratingSummary && summaryText" style="line-height: 1.6; font-size: 15px;">
-            <markdown [data]="summaryText"></markdown>
-        </div>
-    </div>
-
-    <div style="position: absolute; top: 10px; left: 10px; z-index: 100;" *ngIf="isAdmin$ | async">
+    <div class="admin-menu" *ngIf="isAdmin$ | async">
         <button mat-icon-button [matMenuTriggerFor]="adminMenu" color="warn" aria-label="Admin Menu">
             <mat-icon>admin_panel_settings</mat-icon>
         </button>
@@ -51,25 +21,62 @@
         </mat-menu>
     </div>
 
-    <!-- History List Overlay -->
-    <div
-        style="position: absolute; top: 50%; right: 20px; transform: translateY(-50%); z-index: 100; background: rgba(0,0,0,0.7); color: white; padding: 20px; border-radius: 10px; max-height: 80vh; overflow-y: auto; width: 300px; display: flex; flex-direction: column;">
-        <h2 style="text-align: center; margin-bottom: 10px; font-family: 'Roboto', sans-serif;">{{ nextYear }}'s
-            Countries
-        </h2>
-        <div style="flex-grow: 1; overflow-y: auto; margin-bottom: 10px;">
-            <div *ngFor="let country of history; let i = index"
-                style="font-size: 16px; margin-bottom: 5px; cursor: pointer;" (click)="onHistoryItemClick(country)"
-                class="history-item">
-                {{ i + 1 }}. {{ country }}
-            </div>
-            <div *ngIf="history.length === 0" style="text-align: center; font-style: italic; color: #ccc;">
-                No countries selected yet.
+    <!-- Desktop: the panels below sit left (summary), right (picks) and bottom center (button + result).
+         Phones: they stack at the bottom; summary and picks minimize to chips above the result. -->
+    <div class="bottom-stack">
+
+        <!-- Year summary -->
+        <div *ngIf="history.length === 12" class="summary-panel" [class.minimized]="summaryMinimized">
+            <button type="button" class="panel-chip" (click)="toggleSummary()"
+                [attr.aria-expanded]="!summaryMinimized" aria-controls="summary-body">
+                <mat-icon class="chip-icon">auto_awesome</mat-icon>
+                <span class="chip-label">Breakdown</span>
+                <mat-icon class="chip-chevron">{{ summaryMinimized ? 'expand_less' : 'expand_more' }}</mat-icon>
+            </button>
+            <div id="summary-body" class="summary-body">
+                <h2 class="summary-title">Your {{nextYear}} Cultural Dinner Breakdown!</h2>
+
+                <div *ngIf="isGeneratingSummary" class="summary-loading">
+                    <p>Consulting the Oracle...</p>
+                </div>
+
+                <div *ngIf="!isGeneratingSummary && summaryText" class="summary-text">
+                    <markdown [data]="summaryText"></markdown>
+                </div>
             </div>
         </div>
-        <button mat-raised-button color="accent" (click)="copyHistoryToClipboard()" *ngIf="history.length >= 12"
-            style="width: 100%;">
-            Copy to Clipboard
-        </button>
+
+        <!-- This year's picks -->
+        <div class="history-panel" [class.open]="historyOpen">
+            <button type="button" class="panel-chip history-toggle" (click)="toggleHistory()"
+                [attr.aria-expanded]="historyOpen" aria-controls="history-list">
+                <mat-icon class="chip-icon">public</mat-icon>
+                <span class="history-title"><span class="chip-year">{{ nextYear }}'s </span>Countries</span>
+                <span class="history-count">{{ history.length }}/12</span>
+                <mat-icon class="chip-chevron">{{ historyOpen ? 'expand_more' : 'expand_less' }}</mat-icon>
+            </button>
+            <div id="history-list" class="history-list">
+                <div *ngFor="let country of history; let i = index" (click)="onHistoryItemClick(country)" class="history-item">
+                    {{ i + 1 }}. {{ country }}
+                </div>
+                <div *ngIf="history.length === 0" class="history-empty">
+                    No countries selected yet.
+                </div>
+            </div>
+            <button mat-raised-button color="accent" class="copy-btn" (click)="copyHistoryToClipboard()" *ngIf="history.length >= 12">
+                Copy to Clipboard
+            </button>
+        </div>
+
+        <!-- Choose button and result (on phones the result sits above the button) -->
+        <div class="spin-dock">
+            <button mat-raised-button color="primary" class="spin-btn"
+                (click)="spinToRandomCountry()" [disabled]="isSpinning" *ngIf="history.length < 12">
+                {{ isSpinning ? 'Choosing...' : 'Choose Next Country!' }}
+            </button>
+            <div *ngIf="selectedCountry && !isSpinning" class="spin-result" aria-live="polite">
+                {{ selectedCountry }}
+            </div>
+        </div>
     </div>
 </div>

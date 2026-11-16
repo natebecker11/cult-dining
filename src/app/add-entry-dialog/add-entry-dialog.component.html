@@ -1,13 +1,13 @@
 <div class="add">
     <div class="add-header">
-        <h2 class="add-title">Add to {{ country }}</h2>
+        <h2 class="add-title">{{ heading }}</h2>
         <button mat-icon-button (click)="cancel()" [disabled]="busy" aria-label="Close">
             <mat-icon>close</mat-icon>
         </button>
     </div>
 
     <div class="add-body">
-        <mat-button-toggle-group class="type-toggle" [value]="mode" (change)="setMode($event.value)"
+        <mat-button-toggle-group *ngIf="!editing" class="type-toggle" [value]="mode" (change)="setMode($event.value)"
             [disabled]="busy || hasProgress" aria-label="Entry type">
             <mat-button-toggle value="photos"><mat-icon>photo_library</mat-icon> Photos</mat-button-toggle>
             <mat-button-toggle value="dish"><mat-icon>restaurant</mat-icon> Dish</mat-button-toggle>
@@ -62,7 +62,7 @@
                 <button type="button" class="remove" *ngIf="photo.status !== 'done' && !busy" (click)="removePhoto(photo)" aria-label="Remove photo">
                     <mat-icon>close</mat-icon>
                 </button>
-                <span class="badge" *ngIf="photo.status === 'done' || (mode === 'dish' && photo.uploaded)"><mat-icon>check</mat-icon></span>
+                <span class="badge" *ngIf="!photo.existing && (photo.status === 'done' || (mode === 'dish' && photo.uploaded))"><mat-icon>check</mat-icon></span>
                 <span class="badge bad" *ngIf="photo.status === 'error'" [title]="photo.error"><mat-icon>error</mat-icon></span>
                 <span class="bar" *ngIf="photo.status === 'uploading'"><i [style.width.%]="photo.progress * 100"></i></span>
             </div>

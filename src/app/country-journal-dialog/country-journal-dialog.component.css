@@ -263,3 +263,54 @@
   width: 18px;
   height: 18px;
 }
+
+/* Entry menus (creator or admin) */
+.dish-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.entry-menu {
+  margin: -8px -8px 0 0;
+  flex: none;
+}
+
+.grid-cell {
+  position: relative;
+}
+
+.photo-delete {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  cursor: pointer;
+}
+
+.photo-delete mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+.photo-delete:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.action-error {
+  margin: 0;
+  padding: 8px 24px 0;
+  font-size: 14px;
+  color: #c62828;
+}

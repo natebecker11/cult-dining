@@ -5,6 +5,8 @@ import { CountryEntry, EntryPhoto } from '../models/country-entry';
 import { PhotoViewerComponent, PhotoViewerData } from '../photo-viewer/photo-viewer.component';
 import { FirebaseService } from '../firebase.service';
 import { AddEntryDialogComponent, AddEntryDialogData, AddEntryDialogResult, AddEntryMode } from '../add-entry-dialog/add-entry-dialog.component';
+import { ConfirmDialogComponent, ConfirmDialogData } from '../confirm-dialog/confirm-dialog.component';
+import { NotAllowedError } from '../services/country-entries.service';
 
 export interface CountryJournalDialogData
 {
@@ -86,8 +88,75 @@ export class CountryJournalDialogComponent implements OnInit
   public openAdd(mode: AddEntryMode = this.tabIndex === 1 ? 'photos' : 'dish'): void
   {
     if (!this._firebase.isContributor) return;
+    this._openEntryDialog({ country: this.country, mode }, mode);
+  }
+
+  // ---------- Editing and deleting (the creator or an admin) ----------
+
+  /** ID of the entry being deleted, to disable its menu meanwhile */
+  public deletingId: string | null = null;
+  public actionError = '';
+
+  public canManage(entry: CountryEntry): boolean
+  {
+    return this._entries.canManage(entry);
+  }
+
+  public editDish(dish: CountryEntry): void
+  {
+    if (!this.canManage(dish)) return;
+    this._openEntryDialog({ country: this.country, entry: dish }, 'dish');
+  }
+
+  public deleteEntry(entry: CountryEntry): void
+  {
+    if (!this.canManage(entry) || this.deletingId) return;
+    const isDish = entry.type === 'dish';
+    const photoCount = entry.photos.length;
+    const data: ConfirmDialogData = isDish
+      ? {
+        title: `Delete ${entry.title ?? 'this dish'}?`,
+        message: photoCount
+          ? `The dish and its ${photoCount === 1 ? 'photo' : photoCount + ' photos'} will be removed from ${this.country}. This can't be undone.`
+          : `The dish will be removed from ${this.country}. This can't be undone.`,
+        confirmLabel: 'Delete dish',
+        destructive: true
+      }
+      : {
+        title: 'Delete this photo?',
+        message: `It will be removed from ${this.country}. This can't be undone.`,
+        confirmLabel: 'Delete photo',
+        destructive: true
+      };
+
+    this._dialog.open<ConfirmDialogComponent, ConfirmDialogData, boolean>(ConfirmDialogComponent, {
+      data, width: '400px', maxWidth: '95vw', autoFocus: 'dialog'
+    }).afterClosed().subscribe(async confirmed =>
+    {
+      if (!confirmed) return;
+      this.deletingId = entry.id;
+      this.actionError = '';
+      try
+      {
+        await this._entries.deleteEntry(entry);
+        await this.load(isDish ? 'dish' : 'photos');
+      } catch (e)
+      {
+        console.error('Failed to delete journal entry', e);
+        this.actionError = e instanceof NotAllowedError
+          ? e.message
+          : "Couldn't delete it. Check your connection and try again.";
+      } finally
+      {
+        this.deletingId = null;
+      }
+    });
+  }
+
+  private _openEntryDialog(data: AddEntryDialogData, reloadTab: AddEntryMode): void
+  {
     this._dialog.open<AddEntryDialogComponent, AddEntryDialogData, AddEntryDialogResult>(AddEntryDialogComponent, {
-      data: { country: this.country, mode },
+      data,
       width: '560px',
       maxWidth: '95vw',
       maxHeight: '90vh',
@@ -95,7 +164,7 @@ export class CountryJournalDialogComponent implements OnInit
       panelClass: 'journal-dialog-panel'
     }).afterClosed().subscribe(saved =>
     {
-      if (saved) this.load(mode);
+      if (saved) this.load(reloadTab);
     });
   }
 

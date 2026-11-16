@@ -105,6 +105,12 @@ export class FirebaseService
     return this.isContributorSubject.value;
   }
 
+  /** Whether the signed-in user is in the Admins allowlist right now. */
+  public get isAdmin(): boolean
+  {
+    return this.isAdminSubject.value;
+  }
+
   public async loginWithGoogle()
   {
     const provider = new GoogleAuthProvider();

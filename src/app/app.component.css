@@ -1,3 +1,49 @@
 body{
     --_items: 4;
 }
+
+/* Shared header over the globe and wheel views */
+.global-header {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1000;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+    max-width: calc(100vw - 20px);
+}
+
+.welcome {
+    font-weight: 500;
+    margin-right: 10px;
+}
+
+/* Phones: drop the greeting, make Look up an icon button, and use compact buttons
+   so the header stays on one or two short rows (leaving room for the admin menu at top left) */
+@media (max-width: 600px) {
+    .global-header {
+        top: calc(8px + env(safe-area-inset-top, 0px));
+        right: 8px;
+        gap: 6px;
+        max-width: calc(100vw - 64px);
+    }
+
+    .welcome,
+    .lookup-label {
+        display: none;
+    }
+
+    .global-header .mat-mdc-raised-button {
+        padding: 0 10px;
+        min-width: 0;
+        height: 34px;
+        font-size: 13px;
+    }
+
+    .global-header .mat-mdc-raised-button mat-icon {
+        margin: 0;
+    }
+}
