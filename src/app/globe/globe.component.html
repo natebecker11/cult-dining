@@ -38,6 +38,12 @@
 
                 <div *ngIf="isGeneratingSummary" class="summary-loading">
                     <p>Consulting the Oracle...</p>
+                    <p class="summary-hint">This usually takes about 20 seconds.</p>
+                </div>
+
+                <div *ngIf="!isGeneratingSummary && summaryError" class="summary-error" role="alert">
+                    <p>{{ summaryError }}</p>
+                    <button mat-raised-button color="accent" type="button" (click)="generateSummary()">Try again</button>
                 </div>
 
                 <div *ngIf="!isGeneratingSummary && summaryText" class="summary-text">
@@ -74,8 +80,19 @@
                 (click)="spinToRandomCountry()" [disabled]="isSpinning" *ngIf="history.length < 12">
                 {{ isSpinning ? 'Choosing...' : 'Choose Next Country!' }}
             </button>
-            <div *ngIf="selectedCountry && !isSpinning" class="spin-result" aria-live="polite">
-                {{ selectedCountry }}
+            <div *ngIf="selectedCountry && !isSpinning" class="spin-result-block" aria-live="polite">
+                <div class="spin-result">{{ selectedCountry }}</div>
+                <div *ngIf="selectedDish as dish" class="dish-card">
+                    <ng-container *ngIf="dish.kind === 'dish'; else cuisineSummary">
+                        <div class="dish-label"><mat-icon class="dish-icon">restaurant</mat-icon>National dish</div>
+                        <div class="dish-name">{{ dish.dish }}</div>
+                        <div class="dish-desc">{{ dish.description }}</div>
+                    </ng-container>
+                    <ng-template #cuisineSummary>
+                        <div class="dish-label"><mat-icon class="dish-icon">restaurant</mat-icon>The cuisine</div>
+                        <div class="dish-desc">{{ $any(dish).cuisine }}</div>
+                    </ng-template>
+                </div>
             </div>
         </div>
     </div>

@@ -4,9 +4,10 @@ import { JournalLauncherService } from '../services/journal-launcher.service';
 import { CountryEntryCounts } from '../models/country-entry';
 import Globe from 'globe.gl';
 import { FirebaseService } from '../firebase.service';
-import { LlmService } from '../services/llm.service';
+import { LlmService, SummaryError } from '../services/llm.service';
 import { SUMMARY_PROMPT } from '../prompts/summary.prompt';
 import { sharesLandBorder } from '../data/land-borders';
+import { NATIONAL_DISHES, NationalDish } from '../data/national-dishes';
 
 @Component({
   selector: 'app-globe',
@@ -21,6 +22,8 @@ export class GlobeComponent implements OnInit, AfterViewInit
   public unusedCountries: string[] = [];
   public usedCountries: string[] = [];
   public selectedCountry: string | null = null;
+  /** National dish (or cuisine summary) of the country in the result, when we have one */
+  public selectedDish: NationalDish | null = null;
   public isSpinning: boolean = false;
   public isAdmin$ = this._firebase.isAdmin$;
   public history: string[] = [];
@@ -34,6 +37,8 @@ export class GlobeComponent implements OnInit, AfterViewInit
 
   public summaryText: string = "";
   public isGeneratingSummary: boolean = false;
+  /** Shown with a Try again button when the summary request fails or times out */
+  public summaryError: string = "";
   /** Phones: whether the picks list is expanded (desktop always shows it) */
   public historyOpen = false;
   /** Phones: whether the year summary is minimized to a chip (desktop always shows it) */
@@ -241,6 +246,7 @@ export class GlobeComponent implements OnInit, AfterViewInit
     if (this.isSpinning || this.unusedCountries.length === 0) return;
     this.isSpinning = true;
     this.selectedCountry = null;
+    this.selectedDish = null;
     this.globe.polygonCapColor(this.globe.polygonCapColor()); // Force update to clear highlight
 
     let targetName: string;
@@ -310,6 +316,7 @@ export class GlobeComponent implements OnInit, AfterViewInit
         setTimeout(() =>
         {
           this.selectedCountry = match.properties.NAME;
+          this.selectedDish = this.dishFor(targetName);
           this.isSpinning = false;
           this.history.push(targetName);
           this.historyGeoNames.add(match.properties.NAME);
@@ -343,6 +350,7 @@ export class GlobeComponent implements OnInit, AfterViewInit
         setTimeout(() =>
         {
           this.selectedCountry = `${targetName} (not mapped)`;
+          this.selectedDish = this.dishFor(targetName);
           this.isSpinning = false;
           this.history.push(targetName);
 
@@ -359,6 +367,12 @@ export class GlobeComponent implements OnInit, AfterViewInit
         }, 3000);
       }
     }, 3000);
+  }
+
+  /** Looked up by the pick-list name (e.g. "Aruba (Netherlands)"), not the map's name */
+  private dishFor(countryName: string): NationalDish | null
+  {
+    return NATIONAL_DISHES[countryName] ?? null;
   }
 
   public copyHistoryToClipboard(): void
@@ -380,6 +394,7 @@ export class GlobeComponent implements OnInit, AfterViewInit
       // Changing to 1.6 for zoom in effect
       this.globe.pointOfView({ lat, lng, altitude: this.zoom(1.6) }, 1000);
       this.selectedCountry = match.properties.NAME;
+      this.selectedDish = this.dishFor(countryName);
       this.globe.polygonCapColor(this.globe.polygonCapColor()); // Update colors
       // updateLabels is handled automatically if historyGeoNames was updated, but here we just highlighted existing history.
     } else
@@ -425,9 +440,13 @@ export class GlobeComponent implements OnInit, AfterViewInit
     }
   }
 
-  private async generateSummary()
+  /** Also the Breakdown panel's "Try again" button */
+  public async generateSummary()
   {
+    if (this.isGeneratingSummary) return;
     this.isGeneratingSummary = true;
+    this.summaryError = '';
+    this.summaryText = '';
     // Show the breakdown as it arrives (phones can minimize it afterwards)
     this.summaryMinimized = false;
     this.historyOpen = false;
@@ -439,7 +458,7 @@ export class GlobeComponent implements OnInit, AfterViewInit
     } catch (e)
     {
       console.error("Failed to generate summary", e);
-      this.summaryText = "Could not generate summary.";
+      this.summaryError = e instanceof SummaryError ? e.message : "Couldn't get the summary right now. Try again in a moment.";
     } finally
     {
       this.isGeneratingSummary = false;

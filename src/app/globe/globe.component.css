@@ -60,6 +60,54 @@
     overflow-wrap: anywhere;
 }
 
+.spin-result-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+/* National dish (or cuisine summary) under the picked country */
+.dish-card {
+    max-width: 420px;
+    padding: 10px 16px 12px;
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.72);
+    color: #fff;
+    font-family: 'Roboto', sans-serif;
+    text-align: center;
+}
+
+.dish-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: #ffd700;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.dish-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+}
+
+.dish-name {
+    margin-top: 2px;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.dish-desc {
+    margin-top: 4px;
+    font-size: 15px;
+    line-height: 1.4;
+    color: #e6e6e6;
+}
+
 /* ---------- Year summary ---------- */
 .summary-panel {
     position: absolute;
@@ -95,6 +143,22 @@
 .summary-text {
     line-height: 1.6;
     font-size: 15px;
+}
+
+.summary-loading p,
+.summary-error p {
+    margin: 0 0 8px;
+}
+
+.summary-hint {
+    font-size: 13px;
+    font-style: normal;
+    color: #ccc;
+}
+
+.summary-error {
+    text-align: center;
+    padding: 12px 8px;
 }
 
 /* ---------- This year's picks ---------- */
@@ -321,5 +385,22 @@
 
     .spin-result {
         font-size: 26px;
+    }
+
+    .spin-result-block {
+        gap: 8px;
+    }
+
+    .dish-card {
+        max-width: 100%;
+        padding: 8px 12px 10px;
+    }
+
+    .dish-name {
+        font-size: 17px;
+    }
+
+    .dish-desc {
+        font-size: 14px;
     }
 }
