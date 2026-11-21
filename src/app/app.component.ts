@@ -17,7 +17,8 @@ export class AppComponent implements OnInit
   public isAdmin$ = this._firebase.isAdmin$;
   public showGlobalHeader$ = this._router.events.pipe(
     filter((event: Event): event is NavigationEnd => event instanceof NavigationEnd),
-    map((event: NavigationEnd) => event.url !== '/admin'),
+    // Admin pages (/admin, /admin/users) have their own header
+    map((event: NavigationEnd) => !event.urlAfterRedirects.split(/[?#]/)[0].startsWith('/admin')),
     startWith(true) // Default to showing header
   );
 

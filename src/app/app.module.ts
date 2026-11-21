@@ -17,6 +17,7 @@ import { CountryLookupDialogComponent } from './country-lookup-dialog/country-lo
 import { PhotoViewerComponent } from './photo-viewer/photo-viewer.component';
 import { AddEntryDialogComponent } from './add-entry-dialog/add-entry-dialog.component';
 import { ConfirmDialogComponent } from './confirm-dialog/confirm-dialog.component';
+import { ManageUsersComponent } from './manage-users/manage-users.component';
 import { FormsModule } from '@angular/forms';
 
 @NgModule({
@@ -30,7 +31,8 @@ import { FormsModule } from '@angular/forms';
     CountryLookupDialogComponent,
     PhotoViewerComponent,
     AddEntryDialogComponent,
-    ConfirmDialogComponent
+    ConfirmDialogComponent,
+    ManageUsersComponent
   ],
   imports: [
     BrowserModule,
