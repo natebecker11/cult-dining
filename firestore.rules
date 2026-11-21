@@ -42,15 +42,50 @@ service cloud.firestore {
         && d.createdBy.email == request.auth.token.email;
     }
 
-    // Allowlists: each person can check only their own entry (keeps everyone's email private).
-    // Managed in the Firebase console.
-    match /Admins/{email} {
-      allow read: if signedIn() && request.auth.token.email == email;
-      allow write: if false;
+    // A role grant made in Manage Users: records who granted it and when
+    function validGrant(email) {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['email', 'grantedBy', 'grantedAt'])
+        && d.email == email
+        && d.grantedBy == request.auth.token.email
+        && d.grantedAt == request.time;
     }
+
+    // Allowlists: each person can check their own entry; admins see everyone (Manage Users).
+    // Admins can make anyone an admin, but nobody can remove an admin from the app
+    // (delete the doc in the Firebase console if you ever need to).
+    match /Admins/{email} {
+      allow read: if signedIn() && (request.auth.token.email == email || isAdmin());
+      allow create: if isAdmin() && validGrant(email);
+      allow update, delete: if false;
+    }
+    // Admins can add and remove contributors
     match /Contributors/{email} {
-      allow read: if signedIn() && request.auth.token.email == email;
-      allow write: if false;
+      allow read: if signedIn() && (request.auth.token.email == email || isAdmin());
+      allow create: if isAdmin() && validGrant(email);
+      allow delete: if isAdmin();
+      allow update: if false;
+    }
+
+    // Everyone who has signed in (doc ID = their uid), so Manage Users can list them.
+    // People write only their own doc, with their own uid and email; firstSeen never changes.
+    function validUser(d) {
+      return d.keys().hasOnly(['uid', 'email', 'displayName', 'photoURL', 'firstSeen', 'lastSeen'])
+        && d.uid == request.auth.uid
+        && d.email == request.auth.token.email
+        && d.displayName is string && d.displayName.size() <= 200
+        && d.photoURL is string && d.photoURL.size() <= 2000
+        && d.lastSeen == request.time;
+    }
+    match /Users/{uid} {
+      allow read: if isAdmin() || (signedIn() && request.auth.uid == uid);
+      allow create: if signedIn() && request.auth.uid == uid
+        && validUser(request.resource.data)
+        && request.resource.data.firstSeen == request.time;
+      allow update: if signedIn() && request.auth.uid == uid
+        && validUser(request.resource.data)
+        && request.resource.data.firstSeen == resource.data.firstSeen;
+      allow delete: if false;
     }
 
     // Country lists: everyone reads (globe and wheel), only admins change them

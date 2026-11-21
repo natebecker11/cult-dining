@@ -8,7 +8,7 @@
     <button mat-raised-button color="primary" (click)="openLookup()" title="Look up country (/)" aria-label="Look up country">
       <mat-icon>search</mat-icon><span class="lookup-label">Look up country</span>
     </button>
-    <button mat-raised-button color="warn" *ngIf="isAdmin$ | async" (click)="goToAdmin()">Manage Countries</button>
+    <button mat-raised-button color="warn" *ngIf="isAdmin$ | async" (click)="goToAdmin()" title="Manage countries and users">Admin</button>
 
     <ng-container *ngIf="isWheelPage$ | async; else wheelBtn">
       <button mat-raised-button color="accent" routerLink="/">Globe View</button>

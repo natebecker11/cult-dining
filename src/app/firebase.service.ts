@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 // Import the functions you need from the SDKs you need
 import { FirebaseApp, initializeApp } from "firebase/app";
-import { Firestore, getFirestore, doc, getDoc } from "firebase/firestore";
+import { Firestore, getFirestore, doc, getDoc, setDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { Auth, getAuth, GoogleAuthProvider, signInWithPopup, signOut, User, onAuthStateChanged } from "firebase/auth";
 import { FirebaseStorage, getStorage } from "firebase/storage";
 import { BehaviorSubject } from 'rxjs';
@@ -38,33 +38,79 @@ export class FirebaseService
       this.currentUserSubject.next(user);
       if (user && user.email)
       {
-        try
-        {
-          const adminDocRef = doc(this._db, "Admins", user.email);
-          const adminDoc = await getDoc(adminDocRef);
-          this.isAdminSubject.next(adminDoc.exists());
-        } catch (e)
-        {
-          console.error("Error checking admin status", e);
-          this.isAdminSubject.next(false);
-        }
+        // Shows up in Manage Users so an admin can grant roles (doesn't block the role checks below)
+        this.recordSignIn(user);
 
-        // Contributors can add journal entries. Same allowlist pattern as Admins: doc ID is the email.
-        try
-        {
-          const contributorDoc = await getDoc(doc(this._db, "Contributors", user.email));
-          this.isContributorSubject.next(contributorDoc.exists());
-        } catch (e)
-        {
-          console.error("Error checking contributor status", e);
-          this.isContributorSubject.next(false);
-        }
+        await this.checkRoles(user.email);
       } else
       {
         this.isAdminSubject.next(false);
         this.isContributorSubject.next(false);
       }
+      this.rolesReadySubject.next(true);
     });
+  }
+
+  /** Looks up the Admins and Contributors allowlists (doc ID = email) for this person */
+  private async checkRoles(email: string): Promise<void>
+  {
+    try
+    {
+      const adminDoc = await getDoc(doc(this._db, "Admins", email));
+      this.isAdminSubject.next(adminDoc.exists());
+    } catch (e)
+    {
+      console.error("Error checking admin status", e);
+      this.isAdminSubject.next(false);
+    }
+
+    // Contributors can add journal entries
+    try
+    {
+      const contributorDoc = await getDoc(doc(this._db, "Contributors", email));
+      this.isContributorSubject.next(contributorDoc.exists());
+    } catch (e)
+    {
+      console.error("Error checking contributor status", e);
+      this.isContributorSubject.next(false);
+    }
+  }
+
+  /** Re-checks the signed-in person's roles, e.g. after an admin changes their own in Manage Users */
+  public async refreshRoles(): Promise<void>
+  {
+    const email = this.currentUser?.email;
+    if (email) await this.checkRoles(email);
+  }
+
+  /**
+   * Adds or refreshes this person's Users/{uid} doc: name, email, photo, first and last seen.
+   * firestore.rules only lets people write their own doc, and never change firstSeen.
+   */
+  private async recordSignIn(user: User): Promise<void>
+  {
+    const ref = doc(this._db, "Users", user.uid);
+    const profile = {
+      uid: user.uid,
+      email: user.email,
+      displayName: user.displayName ?? "",
+      photoURL: user.photoURL ?? "",
+      lastSeen: serverTimestamp()
+    };
+    try
+    {
+      const existing = await getDoc(ref);
+      if (existing.exists())
+      {
+        await updateDoc(ref, profile);
+      } else
+      {
+        await setDoc(ref, { ...profile, firstSeen: serverTimestamp() });
+      }
+    } catch (e)
+    {
+      console.error("Couldn't record sign-in", e);
+    }
   }
 
   private _app: FirebaseApp;
@@ -80,6 +126,10 @@ export class FirebaseService
 
   private isContributorSubject = new BehaviorSubject<boolean>(false);
   public isContributor$ = this.isContributorSubject.asObservable();
+
+  /** True once Firebase has said who's signed in and their roles are checked (guards wait for this) */
+  private rolesReadySubject = new BehaviorSubject<boolean>(false);
+  public rolesReady$ = this.rolesReadySubject.asObservable();
 
   /** Shared Firestore instance for feature services (e.g. CountryEntriesService). */
   public get db(): Firestore

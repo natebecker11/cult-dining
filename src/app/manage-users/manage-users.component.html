@@ -1,0 +1,89 @@
+<div class="manage-users-page">
+    <div class="teal-header-container">
+        <nav class="admin-nav" aria-label="Admin pages">
+            <a routerLink="/admin" class="admin-nav-link">Countries</a>
+            <a routerLink="/admin/users" class="admin-nav-link active" aria-current="page">Users</a>
+        </nav>
+        <div class="header-controls">
+            <ng-container *ngIf="currentUser$ | async as user">
+                <span class="welcome-text">Welcome, {{ user.displayName }}!</span>
+                <button mat-raised-button color="primary" (click)="goHome()">Home</button>
+                <button mat-raised-button (click)="logout()">Logout</button>
+            </ng-container>
+        </div>
+    </div>
+
+    <main class="users-body">
+        <div class="users-intro">
+            <h1>Manage Users</h1>
+            <p>
+                Everyone who has signed in with Google. <strong>Contributors</strong> can add dishes and photos to the
+                dinner journal. <strong>Admins</strong> manage countries and users and can edit or delete any entry.
+            </p>
+        </div>
+
+        <div class="users-toolbar">
+            <input #filterInput type="search" class="users-filter" placeholder="Search by name or email"
+                autocomplete="off" aria-label="Search users" [value]="filter"
+                (input)="onFilterInput(filterInput.value)" (keydown.escape)="onFilterInput('')" />
+            <span class="users-counts" *ngIf="!loading && !loadError">
+                {{ users.length }} {{ users.length === 1 ? 'person' : 'people' }} ·
+                {{ contributorCount }} {{ contributorCount === 1 ? 'contributor' : 'contributors' }} ·
+                {{ adminCount }} {{ adminCount === 1 ? 'admin' : 'admins' }}
+            </span>
+        </div>
+
+        <div *ngIf="loading" class="users-state">
+            <mat-spinner diameter="32"></mat-spinner>
+        </div>
+
+        <div *ngIf="loadError" class="users-state users-error" role="alert">
+            <p>{{ loadError }}</p>
+            <button mat-raised-button color="primary" (click)="load()">Try again</button>
+        </div>
+
+        <ul *ngIf="!loading && !loadError" class="user-list">
+            <li *ngIf="filtered.length === 0" class="users-empty">
+                {{ filter.trim() ? 'No one matches "' + filter + '"' : 'No one has signed in yet.' }}
+            </li>
+            <li *ngFor="let user of filtered; trackBy: trackByEmail" class="user-row">
+                <div class="user-ident">
+                    <img *ngIf="user.photoURL; else initialsAvatar" class="avatar" [src]="user.photoURL" alt=""
+                        referrerpolicy="no-referrer" />
+                    <ng-template #initialsAvatar><span class="avatar avatar-initials">{{ initials(user) }}</span></ng-template>
+                    <div class="user-text">
+                        <div class="user-name">
+                            {{ user.displayName || user.email }}
+                            <span *ngIf="isMe(user)" class="you-tag">You</span>
+                        </div>
+                        <div class="user-email" *ngIf="user.displayName">{{ user.email }}</div>
+                        <div class="user-seen">
+                            {{ user.lastSeen ? 'Last seen ' + (user.lastSeen | date:'MMM d, y') : "Hasn't signed in since this list started" }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="user-roles">
+                    <mat-slide-toggle color="primary" [checked]="user.isContributor"
+                        [disabled]="savingEmail === user.email"
+                        (change)="toggleContributor(user, $event.source)">
+                        Contributor
+                    </mat-slide-toggle>
+
+                    <span *ngIf="user.isAdmin; else makeAdminBtn" class="admin-badge"
+                        title="Admins can only be removed in the Firebase console">
+                        <mat-icon>verified_user</mat-icon>Admin
+                    </span>
+                    <ng-template #makeAdminBtn>
+                        <button mat-stroked-button color="warn" class="make-admin-btn"
+                            [disabled]="savingEmail === user.email" (click)="makeAdmin(user)">
+                            Make admin
+                        </button>
+                    </ng-template>
+                </div>
+
+                <div *ngIf="rowError[user.email]" class="row-error" role="alert">{{ rowError[user.email] }}</div>
+            </li>
+        </ul>
+    </main>
+</div>
