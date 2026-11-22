@@ -43,6 +43,22 @@ export class GlobeComponent implements OnInit, AfterViewInit
   public historyOpen = false;
   /** Phones: whether the year summary is minimized to a chip (desktop always shows it) */
   public summaryMinimized = false;
+  /** Off: just browsing the globe. On: the picking controls, this year's picks and the breakdown.
+   *  Picks live on the component, so switching off and back on keeps them. */
+  public pickMode = false;
+
+  public setPickMode(on: boolean): void
+  {
+    if (this.isSpinning) return; // the switch is disabled mid-spin; this is a backstop
+    this.pickMode = on;
+    this.refreshGlobeColors();
+    this.updateLabels();
+  }
+
+  private refreshGlobeColors(): void
+  {
+    if (this.globe) this.globe.polygonCapColor(this.globe.polygonCapColor());
+  }
 
   /** Phones show one open panel at a time, so opening one minimizes the other */
   public toggleHistory(): void
@@ -155,8 +171,9 @@ export class GlobeComponent implements OnInit, AfterViewInit
       .backgroundImageUrl('//unpkg.com/three-globe/example/img/night-sky.png')
       .polygonCapColor((feat: any) =>
       {
-        if (feat.properties.NAME === this.selectedCountry) return PALETTE.HISTORY;
-        if (this.historyGeoNames.has(feat.properties.NAME)) return PALETTE.HISTORY;
+        // This year's picks are only highlighted while picking
+        if (this.pickMode && feat.properties.NAME === this.selectedCountry) return PALETTE.HISTORY;
+        if (this.pickMode && this.historyGeoNames.has(feat.properties.NAME)) return PALETTE.HISTORY;
         if (this.usedGeoNames.has(feat.properties.NAME)) return PALETTE.USED;
         return PALETTE.BASE;
       })
@@ -405,8 +422,8 @@ export class GlobeComponent implements OnInit, AfterViewInit
 
   private updateLabels(): void
   {
-    // Collect all unique names from usedGeoNames and historyGeoNames
-    const labelNames = new Set<string>([...this.usedGeoNames, ...this.historyGeoNames]);
+    // Past dinners always; this year's picks only while picking
+    const labelNames = new Set<string>([...this.usedGeoNames, ...(this.pickMode ? this.historyGeoNames : [])]);
 
     const newLabelData: any[] = [];
 
@@ -467,6 +484,7 @@ export class GlobeComponent implements OnInit, AfterViewInit
 
   public testSummary()
   {
+    this.pickMode = true; // show the picks and the breakdown it's testing
     // Clear current history to simulate a fresh run
     this.history = [];
     this.historyGeoNames.clear();
