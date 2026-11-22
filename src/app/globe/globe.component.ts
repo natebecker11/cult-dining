@@ -1,13 +1,23 @@
 import { Component, ElementRef, OnInit, ViewChild, AfterViewInit, NgZone, HostListener } from '@angular/core';
 import { CountryEntriesService } from '../services/country-entries.service';
 import { JournalLauncherService } from '../services/journal-launcher.service';
-import { CountryEntryCounts } from '../models/country-entry';
 import Globe from 'globe.gl';
 import { FirebaseService } from '../firebase.service';
 import { LlmService, SummaryError } from '../services/llm.service';
 import { SUMMARY_PROMPT } from '../prompts/summary.prompt';
 import { sharesLandBorder } from '../data/land-borders';
 import { NATIONAL_DISHES, NationalDish } from '../data/national-dishes';
+
+interface JournalSummary
+{
+  dishes: number;
+  photos: number;
+  /** Oldest first */
+  thumbs: string[];
+}
+
+/** Thumbnails shown in the hover tooltip; the rest show as "+N" */
+const TOOLTIP_THUMBS = 4;
 
 @Component({
   selector: 'app-globe',
@@ -90,8 +100,6 @@ export class GlobeComponent implements OnInit, AfterViewInit
 
   /** Globe shape name (properties.NAME) -> our country name, for countries we've had a dinner for */
   private usedGeoToCountry = new Map<string, string>();
-  /** Journal dish/photo counts per country, for the hover tooltip */
-  private entryCounts = new Map<string, CountryEntryCounts>();
 
   constructor(
     private _firebase: FirebaseService,
@@ -103,9 +111,9 @@ export class GlobeComponent implements OnInit, AfterViewInit
 
   async ngOnInit(): Promise<void>
   {
-    this._entries.getCounts().then(counts => this.entryCounts = counts);
-    // Keep the hover counts current after someone adds an entry
-    this._entries.changed$.subscribe(() => this._entries.getCounts().then(counts => this.entryCounts = counts));
+    this.loadJournal();
+    // Keep the hover counts and zoom cards current after someone adds an entry
+    this._entries.changed$.subscribe(() => this.loadJournal());
     this.unusedCountries = await this._firebase.GetCountriesList();
     this.usedCountries = await this._firebase.GetUsedCountries();
     this.refreshUsedCountries();
@@ -223,18 +231,41 @@ export class GlobeComponent implements OnInit, AfterViewInit
     });
   }
 
-  /** Hover tooltip for countries we've had a dinner for; other countries get none. */
+  /** Counts and thumbnails per country for the hover tooltip, from the one cached entries list */
+  private journalSummaries = new Map<string, JournalSummary>();
+
+  private async loadJournal(): Promise<void>
+  {
+    const entries = [...await this._entries.getAllEntries()].sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0));
+    const summaries = new Map<string, JournalSummary>();
+    for (const entry of entries)
+    {
+      const s = summaries.get(entry.country) ?? { dishes: 0, photos: 0, thumbs: [] };
+      if (entry.type === 'dish') s.dishes++;
+      s.photos += entry.photos.length;
+      s.thumbs.push(...entry.photos.map(p => p.thumbUrl || p.url));
+      summaries.set(entry.country, s);
+    }
+    this.journalSummaries = summaries;
+  }
+
+  /** Hover tooltip for countries we've had a dinner for (other countries get none): counts and a row of thumbnails */
   private journalTooltip(feat: any): string
   {
     const country = this.usedGeoToCountry.get(feat?.properties?.NAME);
     if (!country) return '';
-    const c = this.entryCounts.get(country) ?? { dishes: 0, photos: 0 };
-    const detail = c.dishes || c.photos
-      ? `${c.dishes} ${c.dishes === 1 ? 'dish' : 'dishes'} · ${c.photos} ${c.photos === 1 ? 'photo' : 'photos'}`
+    const s = this.journalSummaries.get(country) ?? { dishes: 0, photos: 0, thumbs: [] };
+    const detail = s.dishes || s.photos
+      ? `${s.dishes} ${s.dishes === 1 ? 'dish' : 'dishes'} · ${s.photos} ${s.photos === 1 ? 'photo' : 'photos'}`
       : 'No entries yet';
-    return `<div style="background:rgba(0,0,0,.85);color:#fff;padding:8px 12px;border-radius:6px;font:13px/1.4 Roboto,sans-serif">`
-      + `<b style="font-weight:500">${escapeHtml(country)}</b><br>`
-      + `<span style="color:#b0bec5">${detail} · Click to open</span></div>`;
+    const thumbs = s.thumbs.slice(0, TOOLTIP_THUMBS).map(url => `<img src="${escapeHtml(url)}" alt="">`).join('')
+      + (s.thumbs.length > TOOLTIP_THUMBS ? `<span class="jt-more">+${s.thumbs.length - TOOLTIP_THUMBS}</span>` : '');
+    return `<div class="journal-tip">`
+      + `<div class="jt-name">${escapeHtml(country)}</div>`
+      + `<div class="jt-detail">${detail}</div>`
+      + (thumbs ? `<div class="jt-thumbs">${thumbs}</div>` : '')
+      + `<div class="jt-hint">Click to open</div>`
+      + `</div>`;
   }
 
   private refreshUsedCountries(): void

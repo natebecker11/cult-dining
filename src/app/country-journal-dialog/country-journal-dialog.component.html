@@ -76,19 +76,28 @@
                         </div>
                     </mat-tab>
 
-                    <mat-tab [label]="'Photos (' + photoEntries.length + ')'">
+                    <mat-tab [label]="'Photos (' + gallery.length + ')'">
                         <div class="tab-panel">
-                            <p *ngIf="photoEntries.length === 0" class="journal-state">No general photos yet. Dish photos are on the Dishes tab.</p>
+                            <p *ngIf="gallery.length === 0" class="journal-state">No photos yet.</p>
                             <div class="grid">
-                                <div class="grid-cell" *ngFor="let photo of generalPhotos; let i = index; trackBy: trackByPhoto">
-                                    <button type="button" class="thumb grid-thumb" (click)="openGeneralPhoto(i)" [attr.aria-label]="'Open photo ' + (i + 1)">
-                                        <img [src]="photo.thumbUrl || photo.url" alt="" loading="lazy" />
+                                <div class="grid-cell" *ngFor="let item of gallery; let i = index; trackBy: trackByGallery">
+                                    <button type="button" class="thumb grid-thumb" (click)="openGalleryPhoto(i)" [attr.aria-label]="'Open photo ' + (i + 1)">
+                                        <img [src]="item.photo.thumbUrl || item.photo.url" alt="" loading="lazy" />
                                     </button>
-                                    <button *ngIf="canManage(photoEntries[i])" type="button" class="photo-delete"
-                                        (click)="deleteEntry(photoEntries[i])" [disabled]="deletingId === photoEntries[i].id"
-                                        [attr.aria-label]="'Delete photo ' + (i + 1)" title="Delete photo">
-                                        <mat-icon>delete</mat-icon>
-                                    </button>
+                                    <span *ngIf="item.dishTitle" class="dish-tag" [title]="item.caption">
+                                        <mat-icon>restaurant</mat-icon>{{ item.dishTitle }}
+                                    </span>
+                                    <div class="photo-actions">
+                                        <button type="button" class="photo-action" (click)="download(item, i)"
+                                            [attr.aria-label]="'Download photo ' + (i + 1)" title="Download photo">
+                                            <mat-icon>download</mat-icon>
+                                        </button>
+                                        <button *ngIf="canDeleteFromGallery(item)" type="button" class="photo-action"
+                                            (click)="deleteEntry(item.entry)" [disabled]="deletingId === item.entry.id"
+                                            [attr.aria-label]="'Delete photo ' + (i + 1)" title="Delete photo">
+                                            <mat-icon>delete</mat-icon>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>

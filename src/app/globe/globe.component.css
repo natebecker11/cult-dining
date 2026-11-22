@@ -108,6 +108,54 @@
     color: #e6e6e6;
 }
 
+/* ---------- Hover tooltip for dinner countries (globe.gl renders it, so ::ng-deep) ---------- */
+:host ::ng-deep .journal-tip {
+    box-sizing: border-box;
+    max-width: 220px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.85);
+    color: #fff;
+    font: 13px/1.35 Roboto, sans-serif;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+:host ::ng-deep .jt-name {
+    font-weight: 500;
+    font-size: 14px;
+}
+
+:host ::ng-deep .jt-detail,
+:host ::ng-deep .jt-hint {
+    color: #b0bec5;
+}
+
+:host ::ng-deep .jt-hint {
+    margin-top: 6px;
+    font-size: 12px;
+}
+
+:host ::ng-deep .jt-thumbs {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 6px;
+}
+
+:host ::ng-deep .jt-thumbs img {
+    width: 40px;
+    height: 40px;
+    border-radius: 4px;
+    object-fit: cover;
+    background: #333;
+}
+
+:host ::ng-deep .jt-more {
+    padding-left: 2px;
+    color: #ffd700;
+    font-weight: 500;
+}
+
 /* ---------- Pick countries switch ---------- */
 .mode-toggle {
     position: absolute;

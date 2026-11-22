@@ -1,6 +1,6 @@
 import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { CountryEntriesService, NotAllowedError, NotContributorError } from '../services/country-entries.service';
+import { CountryEntriesService, NotAllowedError, NotContributorError, TestDataModeError } from '../services/country-entries.service';
 import { CountryEntry, EntryPhoto } from '../models/country-entry';
 import { ImageReadError } from '../utils/image-resize';
 
@@ -316,7 +316,7 @@ export class AddEntryDialogComponent implements OnInit, OnDestroy
       } catch (e)
       {
         this._fail(photo, e);
-        if (e instanceof NotContributorError) return;
+        if (e instanceof NotContributorError || e instanceof TestDataModeError) return;
       }
     }
 
@@ -341,7 +341,7 @@ export class AddEntryDialogComponent implements OnInit, OnDestroy
       } catch (e)
       {
         this._fail(photo, e);
-        if (e instanceof NotContributorError) return;
+        if (e instanceof NotContributorError || e instanceof TestDataModeError) return;
       }
     }
 
@@ -394,7 +394,7 @@ export class AddEntryDialogComponent implements OnInit, OnDestroy
 
   private _message(e: unknown, fallback: string): string
   {
-    if (e instanceof NotContributorError || e instanceof NotAllowedError || e instanceof ImageReadError) return e.message;
+    if (e instanceof NotContributorError || e instanceof NotAllowedError || e instanceof TestDataModeError || e instanceof ImageReadError) return e.message;
     const code = (e as { code?: string })?.code ?? '';
     if (code.includes('unauthorized') || code.includes('permission-denied'))
     {

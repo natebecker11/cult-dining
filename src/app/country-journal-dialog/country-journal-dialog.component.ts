@@ -7,10 +7,21 @@ import { FirebaseService } from '../firebase.service';
 import { AddEntryDialogComponent, AddEntryDialogData, AddEntryDialogResult, AddEntryMode } from '../add-entry-dialog/add-entry-dialog.component';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../confirm-dialog/confirm-dialog.component';
 import { NotAllowedError } from '../services/country-entries.service';
+import { downloadPhoto, photoFileName } from '../utils/download-photo';
 
 export interface CountryJournalDialogData
 {
   country: string;
+}
+
+/** One photo on the Photos tab: a general photo, or a photo from a dish */
+export interface GalleryPhoto
+{
+  photo: EntryPhoto;
+  entry: CountryEntry;
+  /** Dish name for dish photos; shown on the thumbnail */
+  dishTitle?: string;
+  caption: string;
 }
 
 const AVATAR_COLORS = ['#5c6bc0', '#d81b60', '#00897b', '#f4511e', '#8e24aa', '#3949ab', '#6d4c41', '#039be5'];
@@ -27,10 +38,11 @@ export class CountryJournalDialogComponent implements OnInit
   public error = '';
   public entries: CountryEntry[] = [];
   public dishes: CountryEntry[] = [];
-  /** General photo entries (dish photos stay on their dish) */
-  public photoEntries: CountryEntry[] = [];
-  /** The photo from each general photo entry, computed once so the grid isn't rebuilt on every change detection */
-  public generalPhotos: EntryPhoto[] = [];
+  /** Every photo, general and from dishes, oldest entry first; computed once so the grid isn't rebuilt on every change detection */
+  public gallery: GalleryPhoto[] = [];
+  /** Same order as gallery, for the photo viewer */
+  private _galleryPhotos: EntryPhoto[] = [];
+  private _galleryCaptions: string[] = [];
   public tabIndex = 0;
 
   public isContributor$ = this._firebase.isContributor$;
@@ -71,8 +83,11 @@ export class CountryJournalDialogComponent implements OnInit
   {
     this.entries = entries;
     this.dishes = entries.filter(e => e.type === 'dish');
-    this.photoEntries = entries.filter(e => e.type === 'photo' && e.photos.length > 0);
-    this.generalPhotos = this.photoEntries.map(e => e.photos[0]);
+    this.gallery = entries.flatMap(entry => entry.photos.map(photo => entry.type === 'dish'
+      ? { photo, entry, dishTitle: entry.title ?? 'Dish', caption: this.dishCaption(entry) }
+      : { photo, entry, caption: `${this.country} dinner` }));
+    this._galleryPhotos = this.gallery.map(g => g.photo);
+    this._galleryCaptions = this.gallery.map(g => g.caption);
     if (preferTab)
     {
       // Show what was just added
@@ -80,7 +95,7 @@ export class CountryJournalDialogComponent implements OnInit
     } else
     {
       // Open on Photos when there are photos but no dishes
-      this.tabIndex = this.dishes.length === 0 && this.photoEntries.length > 0 ? 1 : 0;
+      this.tabIndex = this.dishes.length === 0 && this.gallery.length > 0 ? 1 : 0;
     }
   }
 
@@ -241,20 +256,41 @@ export class CountryJournalDialogComponent implements OnInit
     }
   }
 
+  private dishCaption(dish: CountryEntry): string
+  {
+    return `${dish.title ?? 'Dish'}${dish.madeBy ? ' · made by ' + dish.madeBy : ''}`;
+  }
+
   public openDishPhotos(dish: CountryEntry, index: number): void
   {
-    this.openViewer(dish.photos, index, `${dish.title ?? 'Dish'}${dish.madeBy ? ' · made by ' + dish.madeBy : ''}`);
+    this.openViewer(dish.photos, index, this.dishCaption(dish));
   }
 
-  public openGeneralPhoto(index: number): void
+  public openGalleryPhoto(index: number): void
   {
-    this.openViewer(this.generalPhotos, index, `${this.country} dinner`);
+    this.openViewer(this._galleryPhotos, index, '', this._galleryCaptions);
   }
 
-  private openViewer(photos: EntryPhoto[], index: number, caption: string): void
+  /** Delete on the Photos tab is for general photos; dish photos are removed by editing the dish */
+  public canDeleteFromGallery(item: GalleryPhoto): boolean
+  {
+    return item.entry.type === 'photo' && this.canManage(item.entry);
+  }
+
+  public download(item: GalleryPhoto, index: number): void
+  {
+    downloadPhoto(item.photo, photoFileName(this.country, item.dishTitle ?? 'dinner', index + 1));
+  }
+
+  public trackByGallery(_: number, item: GalleryPhoto): string
+  {
+    return item.photo.path + item.photo.url;
+  }
+
+  private openViewer(photos: EntryPhoto[], index: number, caption: string, captions?: string[]): void
   {
     this._dialog.open<PhotoViewerComponent, PhotoViewerData>(PhotoViewerComponent, {
-      data: { photos, index, caption },
+      data: { photos, index, caption, captions },
       width: '100vw',
       maxWidth: '100vw',
       height: '100vh',

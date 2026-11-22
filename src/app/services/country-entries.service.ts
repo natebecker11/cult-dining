@@ -6,6 +6,7 @@ import { FirebaseService } from '../firebase.service';
 import { CountryEntry, CountryEntryCounts, EntryPhoto } from '../models/country-entry';
 import { resizeImage } from '../utils/image-resize';
 import { normalizeCountryName } from '../utils/country-search';
+import { makeTestEntries, readTestDataFlag } from '../utils/test-journal-data';
 
 const COLLECTION = 'CountryEntries';
 const STORAGE_ROOT = 'country-entries';
@@ -31,6 +32,15 @@ export class NotContributorError extends Error
     }
 }
 
+/** Thrown for any change while test data is showing, so made-up entries never reach Firestore. */
+export class TestDataModeError extends Error
+{
+    constructor()
+    {
+        super('Test data is on, so changes are turned off. Open the site with ?testdata=0 to make real changes.');
+    }
+}
+
 /** Thrown when someone tries to edit or delete an entry that isn't theirs (and they aren't an admin). */
 export class NotAllowedError extends Error
 {
@@ -47,6 +57,9 @@ export class NotAllowedError extends Error
 export class CountryEntriesService
 {
     private _allEntries: Promise<CountryEntry[]> | null = null;
+    /** Dev server only: made-up entries for every country we've done instead of the real journal (see test-journal-data.ts) */
+    public readonly testMode = readTestDataFlag();
+    private _testEntries: Promise<CountryEntry[]> | null = null;
     private _changed = new Subject<string>();
     /** Emits the country name whenever entries are added, so counts can refresh. */
     public changed$ = this._changed.asObservable();
@@ -58,6 +71,7 @@ export class CountryEntriesService
     /** Entries for one country, oldest first. */
     public async getEntries(country: string): Promise<CountryEntry[]>
     {
+        if (this.testMode) return (await this._getTestEntries()).filter(e => e.country === country).sort(byCreatedAt);
         const q = query(collection(this._firebase.db, COLLECTION), where('country', '==', country));
         const snapshot = await getDocs(q);
         return snapshot.docs.map(d => this._toEntry(d)).sort(byCreatedAt);
@@ -66,6 +80,7 @@ export class CountryEntriesService
     /** Every entry, loaded once and cached; used for counts on the globe and in Look up country. */
     public getAllEntries(): Promise<CountryEntry[]>
     {
+        if (this.testMode) return this._getTestEntries();
         if (!this._allEntries)
         {
             this._allEntries = getDocs(collection(this._firebase.db, COLLECTION))
@@ -195,6 +210,7 @@ export class CountryEntriesService
     /** Whether the signed-in user may edit or delete this entry: the contributor who added it, or any admin. */
     public canManage(entry: CountryEntry): boolean
     {
+        if (this.testMode) return false;
         const user = this._firebase.currentUser;
         if (!user) return false;
         if (this._firebase.isAdmin) return true;
@@ -240,8 +256,18 @@ export class CountryEntriesService
 
     // ---------- Helpers ----------
 
+    private _getTestEntries(): Promise<CountryEntry[]>
+    {
+        if (!this._testEntries)
+        {
+            this._testEntries = this._firebase.GetUsedCountries().then(countries => makeTestEntries(countries));
+        }
+        return this._testEntries;
+    }
+
     private _requireContributor()
     {
+        if (this.testMode) throw new TestDataModeError();
         const user = this._firebase.currentUser;
         if (!user || !user.email || !this._firebase.isContributor)
         {
@@ -252,6 +278,7 @@ export class CountryEntriesService
 
     private _requireCanManage(entry: CountryEntry): void
     {
+        if (this.testMode) throw new TestDataModeError();
         if (!this.canManage(entry))
         {
             throw new NotAllowedError();

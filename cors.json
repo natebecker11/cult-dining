@@ -1,0 +1,7 @@
+[
+  {
+    "origin": ["https://natebecker11.github.io", "http://localhost:4200"],
+    "method": ["GET"],
+    "maxAgeSeconds": 3600
+  }
+]
