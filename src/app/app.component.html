@@ -10,12 +10,8 @@
     </button>
     <button mat-raised-button color="warn" *ngIf="isAdmin$ | async" (click)="goToAdmin()" title="Manage countries and users">Admin</button>
 
-    <ng-container *ngIf="isWheelPage$ | async; else wheelBtn">
-      <button mat-raised-button color="accent" routerLink="/">Globe View</button>
-    </ng-container>
-    <ng-template #wheelBtn>
-      <button mat-raised-button color="accent" routerLink="/wheel">Wheel View</button>
-    </ng-template>
+    <!-- No link to the wheel anymore; anyone landing on /wheel can still get back -->
+    <button *ngIf="isWheelPage$ | async" mat-raised-button color="accent" routerLink="/">Globe View</button>
 
     <button mat-raised-button (click)="logout()">Logout</button>
   </ng-container>
@@ -25,12 +21,7 @@
     </button>
     <button mat-raised-button color="primary" (click)="login()">Login with Google</button>
 
-    <ng-container *ngIf="isWheelPage$ | async; else wheelBtnLogin">
-      <button mat-raised-button color="accent" routerLink="/">Globe View</button>
-    </ng-container>
-    <ng-template #wheelBtnLogin>
-      <button mat-raised-button color="accent" routerLink="/wheel">Wheel View</button>
-    </ng-template>
+    <button *ngIf="isWheelPage$ | async" mat-raised-button color="accent" routerLink="/">Globe View</button>
   </ng-template>
 </div>
 <router-outlet></router-outlet>

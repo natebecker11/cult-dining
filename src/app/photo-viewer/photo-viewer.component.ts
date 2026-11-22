@@ -7,6 +7,8 @@ export interface PhotoViewerData
   photos: EntryPhoto[];
   index: number;
   caption?: string;
+  /** Per-photo captions, same order as photos; falls back to caption */
+  captions?: string[];
 }
 
 @Component({
@@ -18,7 +20,8 @@ export class PhotoViewerComponent
 {
   public photos: EntryPhoto[];
   public index: number;
-  public caption: string;
+  private _caption: string;
+  private _captions: string[];
   private _touchStartX: number | null = null;
 
   constructor(
@@ -29,12 +32,18 @@ export class PhotoViewerComponent
   {
     this.photos = data.photos ?? [];
     this.index = Math.min(Math.max(data.index ?? 0, 0), Math.max(this.photos.length - 1, 0));
-    this.caption = data.caption ?? '';
+    this._caption = data.caption ?? '';
+    this._captions = data.captions ?? [];
   }
 
   public get current(): EntryPhoto | undefined
   {
     return this.photos[this.index];
+  }
+
+  public get caption(): string
+  {
+    return this._captions[this.index] || this._caption;
   }
 
   public prev(): void
