@@ -33,7 +33,7 @@
 /* ---------- Choose button + result ---------- */
 .spin-dock {
     position: absolute;
-    bottom: 50px;
+    bottom: 76px; /* above the Pick countries switch */
     left: 50%;
     transform: translateX(-50%);
     z-index: 100;
@@ -106,6 +106,27 @@
     font-size: 15px;
     line-height: 1.4;
     color: #e6e6e6;
+}
+
+/* ---------- Pick countries switch ---------- */
+.mode-toggle {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    padding: 6px 16px 6px 10px;
+    border-radius: 22px;
+    background: rgba(0, 0, 0, 0.72);
+    white-space: nowrap;
+}
+
+/* White label on the dark pill */
+.mode-toggle ::ng-deep .mdc-form-field,
+.mode-toggle ::ng-deep .mdc-form-field label {
+    color: #fff;
+    font: 500 15px Roboto, sans-serif;
+    cursor: pointer;
 }
 
 /* ---------- Year summary ---------- */
@@ -368,6 +389,13 @@
 
     .history-item {
         font-size: 15px;
+    }
+
+    /* The switch sits at the very bottom, under the button */
+    .mode-toggle {
+        position: static;
+        transform: none;
+        order: 4;
     }
 
     /* Result above the button */

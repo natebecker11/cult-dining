@@ -24,76 +24,86 @@
     <!-- Desktop: the panels below sit left (summary), right (picks) and bottom center (button + result).
          Phones: they stack at the bottom; summary and picks minimize to chips above the result. -->
     <div class="bottom-stack">
+        <!-- Picking controls only show in pick mode; the picks themselves are kept while it's off -->
+        <ng-container *ngIf="pickMode">
 
-        <!-- Year summary -->
-        <div *ngIf="history.length === 12" class="summary-panel" [class.minimized]="summaryMinimized">
-            <button type="button" class="panel-chip" (click)="toggleSummary()"
-                [attr.aria-expanded]="!summaryMinimized" aria-controls="summary-body">
-                <mat-icon class="chip-icon">auto_awesome</mat-icon>
-                <span class="chip-label">Breakdown</span>
-                <mat-icon class="chip-chevron">{{ summaryMinimized ? 'expand_less' : 'expand_more' }}</mat-icon>
-            </button>
-            <div id="summary-body" class="summary-body">
-                <h2 class="summary-title">Your {{nextYear}} Cultural Dinner Breakdown!</h2>
+            <!-- Year summary -->
+            <div *ngIf="history.length === 12" class="summary-panel" [class.minimized]="summaryMinimized">
+                <button type="button" class="panel-chip" (click)="toggleSummary()"
+                    [attr.aria-expanded]="!summaryMinimized" aria-controls="summary-body">
+                    <mat-icon class="chip-icon">auto_awesome</mat-icon>
+                    <span class="chip-label">Breakdown</span>
+                    <mat-icon class="chip-chevron">{{ summaryMinimized ? 'expand_less' : 'expand_more' }}</mat-icon>
+                </button>
+                <div id="summary-body" class="summary-body">
+                    <h2 class="summary-title">Your {{nextYear}} Cultural Dinner Breakdown!</h2>
 
-                <div *ngIf="isGeneratingSummary" class="summary-loading">
-                    <p>Consulting the Oracle...</p>
-                    <p class="summary-hint">This usually takes about 20 seconds.</p>
-                </div>
+                    <div *ngIf="isGeneratingSummary" class="summary-loading">
+                        <p>Consulting the Oracle...</p>
+                        <p class="summary-hint">This usually takes about 20 seconds.</p>
+                    </div>
 
-                <div *ngIf="!isGeneratingSummary && summaryError" class="summary-error" role="alert">
-                    <p>{{ summaryError }}</p>
-                    <button mat-raised-button color="accent" type="button" (click)="generateSummary()">Try again</button>
-                </div>
+                    <div *ngIf="!isGeneratingSummary && summaryError" class="summary-error" role="alert">
+                        <p>{{ summaryError }}</p>
+                        <button mat-raised-button color="accent" type="button" (click)="generateSummary()">Try again</button>
+                    </div>
 
-                <div *ngIf="!isGeneratingSummary && summaryText" class="summary-text">
-                    <markdown [data]="summaryText"></markdown>
-                </div>
-            </div>
-        </div>
-
-        <!-- This year's picks -->
-        <div class="history-panel" [class.open]="historyOpen">
-            <button type="button" class="panel-chip history-toggle" (click)="toggleHistory()"
-                [attr.aria-expanded]="historyOpen" aria-controls="history-list">
-                <mat-icon class="chip-icon">public</mat-icon>
-                <span class="history-title"><span class="chip-year">{{ nextYear }}'s </span>Countries</span>
-                <span class="history-count">{{ history.length }}/12</span>
-                <mat-icon class="chip-chevron">{{ historyOpen ? 'expand_more' : 'expand_less' }}</mat-icon>
-            </button>
-            <div id="history-list" class="history-list">
-                <div *ngFor="let country of history; let i = index" (click)="onHistoryItemClick(country)" class="history-item">
-                    {{ i + 1 }}. {{ country }}
-                </div>
-                <div *ngIf="history.length === 0" class="history-empty">
-                    No countries selected yet.
+                    <div *ngIf="!isGeneratingSummary && summaryText" class="summary-text">
+                        <markdown [data]="summaryText"></markdown>
+                    </div>
                 </div>
             </div>
-            <button mat-raised-button color="accent" class="copy-btn" (click)="copyHistoryToClipboard()" *ngIf="history.length >= 12">
-                Copy to Clipboard
-            </button>
-        </div>
 
-        <!-- Choose button and result (on phones the result sits above the button) -->
-        <div class="spin-dock">
-            <button mat-raised-button color="primary" class="spin-btn"
-                (click)="spinToRandomCountry()" [disabled]="isSpinning" *ngIf="history.length < 12">
-                {{ isSpinning ? 'Choosing...' : 'Choose Next Country!' }}
-            </button>
-            <div *ngIf="selectedCountry && !isSpinning" class="spin-result-block" aria-live="polite">
-                <div class="spin-result">{{ selectedCountry }}</div>
-                <div *ngIf="selectedDish as dish" class="dish-card">
-                    <ng-container *ngIf="dish.kind === 'dish'; else cuisineSummary">
-                        <div class="dish-label"><mat-icon class="dish-icon">restaurant</mat-icon>National dish</div>
-                        <div class="dish-name">{{ dish.dish }}</div>
-                        <div class="dish-desc">{{ dish.description }}</div>
-                    </ng-container>
-                    <ng-template #cuisineSummary>
-                        <div class="dish-label"><mat-icon class="dish-icon">restaurant</mat-icon>The cuisine</div>
-                        <div class="dish-desc">{{ $any(dish).cuisine }}</div>
-                    </ng-template>
+            <!-- This year's picks -->
+            <div class="history-panel" [class.open]="historyOpen">
+                <button type="button" class="panel-chip history-toggle" (click)="toggleHistory()"
+                    [attr.aria-expanded]="historyOpen" aria-controls="history-list">
+                    <mat-icon class="chip-icon">public</mat-icon>
+                    <span class="history-title"><span class="chip-year">{{ nextYear }}'s </span>Countries</span>
+                    <span class="history-count">{{ history.length }}/12</span>
+                    <mat-icon class="chip-chevron">{{ historyOpen ? 'expand_more' : 'expand_less' }}</mat-icon>
+                </button>
+                <div id="history-list" class="history-list">
+                    <div *ngFor="let country of history; let i = index" (click)="onHistoryItemClick(country)" class="history-item">
+                        {{ i + 1 }}. {{ country }}
+                    </div>
+                    <div *ngIf="history.length === 0" class="history-empty">
+                        No countries selected yet.
+                    </div>
+                </div>
+                <button mat-raised-button color="accent" class="copy-btn" (click)="copyHistoryToClipboard()" *ngIf="history.length >= 12">
+                    Copy to Clipboard
+                </button>
+            </div>
+
+            <!-- Choose button and result (on phones the result sits above the button) -->
+            <div class="spin-dock">
+                <button mat-raised-button color="primary" class="spin-btn"
+                    (click)="spinToRandomCountry()" [disabled]="isSpinning" *ngIf="history.length < 12">
+                    {{ isSpinning ? 'Choosing...' : 'Choose Next Country!' }}
+                </button>
+                <div *ngIf="selectedCountry && !isSpinning" class="spin-result-block" aria-live="polite">
+                    <div class="spin-result">{{ selectedCountry }}</div>
+                    <div *ngIf="selectedDish as dish" class="dish-card">
+                        <ng-container *ngIf="dish.kind === 'dish'; else cuisineSummary">
+                            <div class="dish-label"><mat-icon class="dish-icon">restaurant</mat-icon>National dish</div>
+                            <div class="dish-name">{{ dish.dish }}</div>
+                            <div class="dish-desc">{{ dish.description }}</div>
+                        </ng-container>
+                        <ng-template #cuisineSummary>
+                            <div class="dish-label"><mat-icon class="dish-icon">restaurant</mat-icon>The cuisine</div>
+                            <div class="dish-desc">{{ $any(dish).cuisine }}</div>
+                        </ng-template>
+                    </div>
                 </div>
             </div>
+        </ng-container>
+
+        <div class="mode-toggle" [class.on]="pickMode">
+            <mat-slide-toggle color="primary" [checked]="pickMode" [disabled]="isSpinning"
+                (change)="setPickMode($event.checked)">
+                Pick countries
+            </mat-slide-toggle>
         </div>
     </div>
 </div>
